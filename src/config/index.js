@@ -59,8 +59,15 @@ export default {
     e: { name: "EXTRA", description: "Extra image", shortcut: "e" },
   },
   url: function () {
+    // Get the current URL from the window location
+    // Create a new URL object from the current URL
+    // Extract the hostname (which will include the IP address)
+    const currentUrl = window.location.href;
+    const urlObject = new URL(currentUrl);
+    const hostname = urlObject.hostname;
+    
     return process.env.NODE_ENV == "production"
-      ? "http://127.0.0.1:"
+      ? `http://${hostname}:`
       : "http://192.168.1.62:";
   },
   url_server: function () {
