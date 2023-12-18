@@ -27,7 +27,7 @@
                 </v-list-item-action>
               </v-list-item>
 
-              <v-list-item>
+              <!-- <v-list-item>
                 <v-list-item-title>Tare</v-list-item-title>
 
                 <v-list-item-subtitle>
@@ -39,29 +39,29 @@
                     Tare
                   </v-btn>
                 </v-list-item-action>
-              </v-list-item>
+              </v-list-item> -->
+              <!-- <v-list-item>
+                <v-list-item-title>Zero</v-list-item-title>
+  
+                <v-list-item-subtitle>
+                  with this parameter you can set the Zero
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <v-btn @click="setZero()" color="primary" class="buttons">
+                    <v-icon class="mr-1">mdi-numeric-0-box</v-icon>
+                    Zero
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item> -->
             </v-list>
-            <v-list-item>
-              <v-list-item-title>Zero</v-list-item-title>
-
-              <v-list-item-subtitle>
-                with this parameter you can set the Zero
-              </v-list-item-subtitle>
-              <v-list-item-action class="justify-end">
-                <v-btn @click="setZero()" color="primary" class="buttons">
-                  <v-icon class="mr-1">mdi-numeric-0-box</v-icon>
-                  Zero
-                </v-btn>
-              </v-list-item-action>
-            </v-list-item>
           </v-card-text>
         </v-card>
 
-        <h3 class="mt-10 mb-3">
+        <h3 class="mt-10 mb-3" >
           <v-icon class="mr-2">mdi-eye</v-icon>
           Vision parameters
         </h3>
-        <v-card elevation="2">
+        <v-card elevation="2" disabled>
           <v-card-text>
             <v-list>
               <v-list-item>
