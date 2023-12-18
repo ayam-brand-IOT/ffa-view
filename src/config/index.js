@@ -32,44 +32,44 @@ export default {
     "D",
   ],
   defects: {
-    1: { name: "BB", id: 0 },
-    2: { name: "SBB", id: 1 },
-    3: { name: "HD", id: 2 },
-    4: { name: "M", id: 3 },
-    5: { name: "S", id: 4 },
-    6: { name: "LD", id: 5 },
-    7: { name: "OS", id: 6 },
-    8: { name: "OS2", id: 7 },
-    9: { name: "O2", id: 8 },
-    0: { name: "FB", id: 9 },
-    "-": { name: "OSM", id: 10 },
-    Control: { name: "SC", id: 11 },
-    Shift: { name: "GR", id: 12 },
-    CapsLock: { name: "T", id: 13 },
-    Tab: { name: "ST", id: 14 },
-    Escape: { name: "GC", id: 15 },
+    1: { name: "BB", id: 0, shortcut: "1", description: "BB" },
+    2: { name: "SBB", id: 1, shortcut: "2", description: "SBB" },
+    3: { name: "HD", id: 2, shortcut: "3", description: "HD" },
+    4: { name: "M", id: 3, shortcut: "4", description: "M" },
+    5: { name: "S", id: 4, shortcut: "5", description: "S" },
+    6: { name: "LD", id: 5, shortcut: "6", description: "LD" },
+    7: { name: "OS", id: 6, shortcut: "7", description: "OS" },
+    8: { name: "OS2", id: 7, shortcut: "8", description: "OS2" },
+    9: { name: "O2", id: 8, shortcut: "9", description: "O2" },
+    0: { name: "FB", id: 9, shortcut: "0", description: "FB" },
+    "-": { name: "OSM", id: 10, shortcut: "-", description: "OSM" },
+    tab: { name: "ST", id: 14, shortcut: "tab", description: "ST" },
+    shift: { name: "GR", id: 12, shortcut: "shift", description: "GR" },
+    escape: { name: "GC", id: 15, shortcut: "escape", description: "GC" },
+    control: { name: "SC", id: 11, shortcut: "control", description: "SC" },
+    capslock: { name: "T", id: 13, shortcut: "capslock", description: "T" },
   },
   actions: {
-    " ": "CAPTURE",
-    c: "CANCEL",
-    m: "TOGGLE",
+    " ": { name: "CAPTURE", description: "Capture", shortcut: "space" },
+    c: { name: "CANCEL", description: "Cancel", shortcut: "c" },
+    m: { name: "TOGGLE", description: "Toggle", shortcut: "m" },
+    z: { name: "ZERO", description: "Zero", shortcut: "z" },
+    t: { name: "TARE", description: "Tare", shortcut: "t" },
+    b: { name: "BBT", description: "Broken BT", shortcut: "b" },
+    e: { name: "EXTRA", description: "Extra image", shortcut: "e" },
   },
   url: function () {
-    return "http://fish-analysis64.local:";
     return process.env.NODE_ENV == "production"
       ? "http://127.0.0.1:"
-      : "http://fish-analysis64.local:";
+      : "http://192.168.1.62:";
   },
   url_server: function () {
     return process.env.NODE_ENV !== "production"
-      ? // ? "http://127.0.0.1:33002/"
-        "http://fish-analysis64.local:3030/"
+      ? "http://192.168.1.62:3030/"
       : "";
-    return "";
   },
   url_port: function () {
     console.warn(process.env.NODE_ENV);
-    // return process.env.NODE_ENV !== "production" ? "3002" : "33004";
     return "3002";
   },
 };

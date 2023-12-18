@@ -14,7 +14,7 @@
       </v-btn>
     </div>
     <v-row>
-      <v-col class="" cols="6">
+      <v-col style="border-right: solid 1px lightgray" cols="6">
         <img
           class="the_fuckin_image elevation-2"
           :src="`${url_server}video_feed`"
@@ -32,17 +32,22 @@
         />
       </v-col>
     </v-row>
-    <v-row>
-      <v-col cols="6" class="d-flex flex-column">
+    <v-row style="border-bottom: solid 1px lightgray" class="pb-2">
+      <v-col
+        cols="6"
+        class="d-flex flex-column px-7"
+        style="border-right: solid 1px lightgray"
+      >
         <h2>Weight:</h2>
         <h1 class="ml-3">{{ live.weight }} g</h1>
-        <v-col cols="12" class="d-flex">
-          <v-row>
-            <v-col
-              cols="2"
-              v-for="(indicator, i) in live.indicators"
-              class="d-flex flex-column align-center px-3 indicator-wrapper"
-            >
+        <!-- <v-col cols="12" class="d-flex"> -->
+        <v-row>
+          <v-col
+            cols="2"
+            v-for="(indicator, i) in live.indicators"
+            class="d-flex px-3 indicator-wrapper"
+          >
+            <div class="d-flex flex-column align-center">
               <span :class="`text-${indicator.status ? 'black' : 'grey'}`">
                 {{ indicator.name }}
               </span>
@@ -50,20 +55,22 @@
                 class="indicator"
                 :class="indicator.status ? 'active' : 'inactive'"
               ></div>
-            </v-col>
-          </v-row>
-        </v-col>
+            </div>
+          </v-col>
+        </v-row>
+        <!-- </v-col> -->
       </v-col>
-      <v-col cols="6" class="d-flex flex-column">
+      <v-col cols="6" class="d-flex flex-column px-7">
         <h2>Weight:</h2>
         <h1 class="ml-3">{{ captured.weight }} g</h1>
-        <v-col cols="12" class="d-flex">
-          <v-row>
-            <v-col
-              cols="2"
-              v-for="(indicator, i) in captured.indicators"
-              class="d-flex flex-column align-center px-3 indicator-wrapper"
-            >
+        <!-- <v-col cols="12" class="d-flex"> -->
+        <v-row>
+          <v-col
+            cols="2"
+            v-for="(indicator, i) in captured.indicators"
+            class="d-flex px-3 indicator-wrapper"
+          >
+            <div class="d-flex flex-column align-center">
               <span :class="`text-${indicator.status ? 'black' : 'grey'}`">
                 {{ indicator.name }}
               </span>
@@ -71,19 +78,20 @@
                 class="indicator"
                 :class="indicator.status ? 'active' : 'inactive'"
               ></div>
-            </v-col>
-          </v-row>
-        </v-col>
+            </div>
+          </v-col>
+        </v-row>
+        <!-- </v-col> -->
       </v-col>
     </v-row>
-    <v-row class="mt-16">
+    <v-row class="mt-0">
       <v-spacer></v-spacer>
 
       <v-btn
         @click="finishLotAnalysis"
         size="x-large"
         color="success"
-        class="mr-5 mt-8"
+        class="mr-5 mt-5"
       >
         <v-icon>mdi-check</v-icon>
         Finish Lot
@@ -112,7 +120,14 @@
     </v-dialog>
 
     <select-lot ref="selectLotModal" v-model="lot" />
-    <preview-extra-image ref="imagePreview" :image="extraImage" @add="addExtraImage" @close="canceledExtraImage"/>
+    <preview-extra-image
+      ref="imagePreview"
+      :image="extraImage"
+      @add="addExtraImage"
+      @close="canceledExtraImage"
+    />
+    <notification ref="notification" />
+    <commandList :commands-list="getCommands"/>
   </v-container>
 </template>
 
@@ -121,12 +136,16 @@ import axios from "axios";
 import config from "../config";
 import { mapState, mapGetters } from "vuex";
 import selectLot from "@/components/selectLot.vue";
+import commandList from "@/components/commandList.vue";
+import pushNotification from "@/components/pushNotification.vue";
 import PreviewExtraImage from "@/components/previewExtraImage.vue";
 
 export default {
   components: {
     selectLot,
+    notification: pushNotification,
     PreviewExtraImage,
+    commandList ,
   },
   data: () => ({
     lot: null,
@@ -152,6 +171,10 @@ export default {
     url_server: () => config.url_server(),
     url_port: () => config.url_port(),
     url: () => config.url(),
+    getCommands: () => {
+      const { actions, defects } = config;
+      return {...defects , ...actions }     
+    },
 
     filtered_indicators() {
       const { indicators } = this.captured;
@@ -162,6 +185,14 @@ export default {
     },
   },
   methods: {
+    notify(message, type = "success") {
+      this.$refs.notification.push(message, type);
+    },
+
+    updateNet(){
+      this.socket_instance.emit("update_net", {});
+    },
+
     evokeAction(action) {
       switch (action) {
         case "CAPTURE":
@@ -173,30 +204,55 @@ export default {
         case "TOGGLE":
           this.toggle_laser();
           break;
+        case "TARE":
+          this.setTare();
+          break;
+        case "ZERO":
+          this.setZero();
+          break;
+        case "EXTRA":
+          if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
+          this.takeExtraPicture();
+          break;
+        case "BBT":
+          if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
+          this.$router.push("/broken-belly-test");
+          break;
       }
     },
 
     keyboardCatch(event) {
-      const key = event.key;
+      const key = event.key.toLowerCase();
       const { defects, actions } = config;
       const { indicators } = this.live;
 
       //if in defects exist on key name with the key pressed
       if (defects.hasOwnProperty(key)) {
         event.preventDefault();
-        const index = indicators.findIndex((indicator) => indicator.key == key);
+        const index = indicators.findIndex((indicator) => indicator.key.toLowerCase() == key);
 
         this.live.indicators[index].status = !indicators[index].status;
       } else if (actions.hasOwnProperty(key)) {
-        const index = actions[key];
+        const index = actions[key].name;
         event.preventDefault();
         console.warn("action", index);
         this.evokeAction(index);
       }
     },
 
+    setTare(){
+      this.notify("Tare command sent", "success")
+      this.socket_instance.emit("set_tare", {});
+    },
+
+    setZero(){
+      this.notify("Zero command sent", "success")
+      this.socket_instance.emit("set_zero", {});
+    },
+
     toggle_laser() {
       this.laser_state = !this.laser_state;
+      this.notify(`Laser ${this.laser_state ? "ON" : "OFF"}`, "success");
       this.socket_instance.emit("laser", { state: this.laser_state });
     },
 
@@ -347,6 +403,7 @@ export default {
 
       this.live.weight = 0;
     },
+
     takeExtraPicture() {
       const imageElement = this.$refs.liveImage;
       const previewModal = this.$refs.imagePreview;
@@ -376,7 +433,8 @@ export default {
   mounted() {
     var { defects } = config;
 
-    window.addEventListener("keydown", this.keyboardCatch);
+    window.addEventListener("keyup", this.keyboardCatch);
+    this.interval = setInterval(this.updateNet, 250);
 
     // iterate over the defects and create the indicators
     Object.keys(defects).forEach((value, index) => {
@@ -384,6 +442,7 @@ export default {
       this.live.indicators.push({ name, status: false, key: value, id });
       this.captured.indicators.push({ name, status: false, key: value, id });
     });
+
 
     window.addEventListener("beforeunload", (event) => {
       if (this.analyzed_image) {
@@ -395,7 +454,9 @@ export default {
 
     const { socket_instance } = this;
 
-    socket_instance.emit("enter_to_weight_mode", { });
+    socket_instance.emit("set_tare", {});
+
+    socket_instance.emit("enter_to_weight_mode", {});
 
     socket_instance.on("weight_update", (data) => {
       this.live.weight = data;
@@ -422,7 +483,11 @@ export default {
   },
 
   beforeUnmount() {
-    window.addEventListener("keydown", this.handleKeyDown);
+    window.removeEventListener("keyup", this.keyboardCatch);
+    this.socket_instance.off("weight_update");
+    this.socket_instance.off("analysis_data");
+    this.socket_instance.off("frame_ready");
+    if (this.interval) clearInterval(this.interval);
   },
 
   watch: {
@@ -443,8 +508,8 @@ export default {
 
 <style scoped lang="scss">
 .the_fuckin_image {
-  width: 100%;
-  min-width: 100%;
+  width: 80%;
+  min-width: 80%;
   min-height: 100%;
   border: solid 1px gray;
   border-radius: 5px;
@@ -452,7 +517,7 @@ export default {
   /* height: 300px; */
 }
 .indicator-wrapper {
-  // max-height: 75px;
+  max-height: 75px;
 }
 .indicator {
   width: 24px;

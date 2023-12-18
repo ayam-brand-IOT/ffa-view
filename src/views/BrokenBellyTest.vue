@@ -52,6 +52,8 @@
       </v-col>
     </v-row>
     <request-modal ref="loadingModal" />
+    <notification ref="notification" />
+    <commandList :commands-list="getCommands" />
   </v-container>
 </template>
 <script>
@@ -59,19 +61,26 @@ import axios from "axios";
 import config from "@/config";
 import { mapState, mapGetters } from "vuex";
 import Line from "@/components/lineChart.vue";
+import commandList from "@/components/commandList.vue";
 import requestModal from "@/components/requestModal.vue";
+import pushNotification from "@/components/pushNotification.vue";
 
 export default {
   name: "BrokenBellyTest",
   components: {
     Line,
     requestModal,
+    commandList,
+    notification: pushNotification,
   },
   computed: {
     ...mapState(["socket_instance"]),
     ...mapGetters(["getAnalyzingLotNo"]),
     url_port: () => config.url_port(),
     url: () => config.url(),
+    getCommands() {
+      return this.actions;
+    },
   },
   data: () => ({
     force_data: [],
@@ -84,46 +93,124 @@ export default {
     data: [],
     testIsRunning: false,
     optionsAvailable: false,
+    actions: {
+      " ": { name: "START", description: "Start test", shortcut: "space" },
+      h: { name: "HOME", description: "Go to home", shortcut: "h" },
+      s: { name: "SAVE", description: "Save test", shortcut: "s" },
+      c: { name: "CLEAR", description: "Reset test", shortcut: "c" },
+      t: { name: "TARE", description: "Tare", shortcut: "t" },
+    },
   }),
   methods: {
-    run_test() {
-      const { socket_instance, testIsRunning } = this;
-      if (testIsRunning) {
-        this.stopTest();
-      } else {
-        this.resetValues();
-        socket_instance.emit("enter_to_tension_test", "");
+    evokeAction(action) {
+      switch (action) {
+        case "HOME":
+          this.$router.push("/");
+          break;
+        case "START":
+          this.run_test();
+          break;
+        case "SAVE":
+          if (this.optionsAvailable) this.saveData();
+          break;
+        case "CLEAR":
+          if (this.optionsAvailable) this.resetTest();
+          break;
+        case "TARE":
+          this.setTare();
+          break;
       }
     },
+
+    keyboardCatch(event) {
+      const { actions } = this;
+      const key = event.key.toLowerCase();
+
+      if (actions.hasOwnProperty(key)) {
+        const index = actions[key].name;
+        event.preventDefault();
+        if (index !== "START" && this.testIsRunning) {
+          this.notify("Test is running, Stop it to run the command", "warning");
+          return;
+        }
+        console.warn("action", index);
+        this.evokeAction(index);
+      }
+    },
+
+    setTare() {
+      this.notify("Tare command sent", "success");
+      this.socket_instance.emit("set_tare", true);
+    },
+
+    updateTension() {
+      const { socket_instance } = this;
+      socket_instance.emit("get_tension", "");
+    },
+
+    run_test() {
+      const { testIsRunning } = this;
+
+      if (testIsRunning) this.stopTest();
+      else this.startTest();
+    },
+
+    notify(text, type, time) {
+      this.$refs.notification.push(text, type, time);
+    },
+
+    startTest() {
+      this.notify("Test started", "info");
+
+      this.resetValues();
+      this.testIsRunning = true;
+      this.interval = setInterval(this.updateTension, 50);
+
+      this.testTimeout = setTimeout(() => {
+        this.notify("Test finished: timeout", "error", 1000);
+        this.testFinished();
+      }, 10000);
+    },
+
     resetValues() {
       this.duration = 0;
       this.break_point = 0;
       this.time_data = [];
       this.force_data = [];
     },
+
     resetTest() {
       this.optionsAvailable = false;
 
       this.resetValues();
       this.updateChart();
     },
-    stopTest() {
-      const { socket_instance } = this;
 
-      socket_instance.emit("enter_to_weight_mode", "");
-      this.testIsRunning = false;
+    stopTest() {
+      // const { socket_instance } = this;
+
+      // socket_instance.emit("enter_to_weight_mode", "");
+
+      if (this.interval) clearInterval(this.interval);
+      if (this.testTimeout) clearTimeout(this.testTimeout);
+
       this.resetValues();
+      this.testIsRunning = false;
     },
+
     updateChart() {
       this.data = this.force_data;
       this.labels = this.time_data;
 
       this.$refs.ntm.update();
     },
+
     testFinished() {
       const { socket_instance, force_data, start_time } = this;
 
-      socket_instance.emit("enter_to_weight_mode", "");
+      // socket_instance.emit("enter_to_weight_mode", "");
+      if (this.interval) clearInterval(this.interval);
+      if (this.testTimeout) clearTimeout(this.testTimeout);
 
       this.testIsRunning = false;
 
@@ -137,6 +224,7 @@ export default {
       console.warn("break_point", this.break_point);
       console.warn("force_data", force_data.length);
     },
+
     saveData() {
       const { break_point, getAnalyzingLotNo } = this;
 
@@ -161,20 +249,26 @@ export default {
         );
     },
   },
+
   mounted() {
     const { socket_instance } = this;
 
+    window.addEventListener("keyup", this.keyboardCatch);
+    this.socket_instance.emit("set_tare", true);
+
     socket_instance.on("tension_update", (tension) => {
       const tolerance = 10;
-      const { initial_tension, force_data } = this;
+      const { initial_tension, force_data, testIsRunning } = this;
 
-      if (this.force_data.length == 0) {
+      if (this.force_data.length == 0 && testIsRunning) {
         this.testIsRunning = true;
         this.optionsAvailable = false;
         this.initial_tension = tension;
         // Stating a timer from the first tension update
         this.start_time = new Date().getTime();
       }
+
+      console.log({ tension, initial_tension });
 
       this.force_data.push(tension);
       this.time_data.push(new Date().getTime() - this.start_time);
@@ -186,10 +280,16 @@ export default {
 
       if (force_data.length > 2) {
         if (between_tolerance && is_smaller_than_before) {
+          this.notify("Test finished: tension drop", "success", 1000);
           this.testFinished();
         }
       }
     });
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("keyup", this.keyboardCatch);
+    this.socket_instance.off("tension_update");
   },
 };
 </script>

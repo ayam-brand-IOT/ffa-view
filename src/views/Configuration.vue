@@ -34,8 +34,8 @@
                   with this parameter you setup the Tare
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
-                  <v-btn @click="" color="primary" class="buttons">
-                    <v-icon>mdi-scale-balance</v-icon>
+                  <v-btn @click="setTare()" color="primary" class="buttons">
+                    <v-icon class="mr-1">mdi-scale-balance</v-icon>
                     Tare
                   </v-btn>
                 </v-list-item-action>
@@ -48,8 +48,8 @@
                 with this parameter you can set the Zero
               </v-list-item-subtitle>
               <v-list-item-action class="justify-end">
-                <v-btn color="primary" class="buttons">
-                  <v-icon>mdi-numeric-0-box</v-icon>
+                <v-btn @click="setZero()" color="primary" class="buttons">
+                  <v-icon class="mr-1">mdi-numeric-0-box</v-icon>
                   Zero
                 </v-btn>
               </v-list-item-action>
@@ -98,6 +98,24 @@
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
                   <v-btn to="/config/lot-info" color="primary" class="buttons">
+                    <v-icon class="mr-1">mdi-view-list</v-icon>
+                    Manage
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Export data</v-list-item-title>
+
+                <v-list-item-subtitle>
+                  Export lots data to a CSV file
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <v-btn
+                    to="/config/export-lot-data"
+                    color="primary"
+                    class="buttons"
+                  >
+                    <v-icon class="mr-1">mdi-download</v-icon>
                     Manage
                   </v-btn>
                 </v-list-item-action>
@@ -111,9 +129,7 @@
 </template>
 <script>
 import axios from "axios";
-import config from "@/config";
 import { mapState } from "vuex";
-import { mapGetters } from "vuex";
 import calibrateScale from "@/components/calibrateScale.vue";
 
 export default {
@@ -133,9 +149,12 @@ export default {
     ...mapState(["socket_instance"]),
   },
   methods: {
-    tare(){
-      this.socket_instance.emit("tare", { });
-    },  
+    setTare() {
+      this.socket_instance.emit("set_tare", {});
+    },
+    setZero() {
+      this.socket_instance.emit("set_zero", {});
+    },
     getConfig() {
       axios
         .get("/api/config")
@@ -146,9 +165,6 @@ export default {
           console.log(error);
         });
     },
-  },
-  mounted() {
-    // this.getConfig();
   },
 };
 </script>

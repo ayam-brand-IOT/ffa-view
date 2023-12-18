@@ -149,7 +149,7 @@ export default {
       this.editing = true;
       this.lot = { ...item };
       this.add_lot_dialog = true;
-      this.$refs.loadingModal.open();
+      // this.$refs.loadingModal.open();
     },
     async addLot() {
       const { editing } = this;

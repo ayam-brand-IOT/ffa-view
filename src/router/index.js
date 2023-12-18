@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Vision from "../views/Vision.vue";
 import LotInfo from "../views/LotInfo.vue";
+import ExportLot from "../views/ExportLot.vue"
 import HomeView from "../views/HomeView.vue";
 import LoadCell from "../views/LoadCell.vue";
 import Config from "../views/Configuration.vue";
@@ -9,7 +10,7 @@ import ConfigWrapper from "../views/ConfigWrapper.vue";
 const routes = [
   {
     path: "/",
-    name: "Fish Analyzer",
+    name: "Frozen Fish Analyzer",
     component: HomeView,
   },
   {
@@ -32,7 +33,7 @@ const routes = [
   },
   {
     path: "/muestra/:id",
-    name: "muestra",
+    name: "Sample",
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
@@ -75,6 +76,13 @@ const routes = [
         path: "lot-info",
         name: "Lots Information",
         component: LotInfo,
+      },
+      {
+        // UserPosts will be rendered inside User's <router-view>
+        // when /user/:id/posts is matched
+        path: "export-lot-data",
+        name: "Export data",
+        component: ExportLot,
       },
       {
         // UserPosts will be rendered inside User's <router-view>

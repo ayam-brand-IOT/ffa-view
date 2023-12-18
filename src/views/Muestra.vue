@@ -106,16 +106,20 @@ export default {
       axios
         .get(`${url}${url_port}/select/${this.$route.params.id}`)
         .then((response) => {
-          console.warn(response.data.data);
           this.muestra = response.data.data[0];
+
+          this.$refs.requestModal.close(100);
+
+          if (this.muestra.defects == null) return;
+    
           const defect_ids = JSON.parse(`[${this.muestra.defects}]`);
           
           const defects = defect_ids.map((id) => {
             return this.indicators.find((indicator) => indicator.id == id).key;
           });
-
-          this.$refs.requestModal.close(100);
+          
           defects.forEach((defect) => this.indicators[defect].status = true);
+
         })
         .catch((error) => {
           console.error(error);
