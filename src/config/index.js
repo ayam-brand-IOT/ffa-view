@@ -15,6 +15,7 @@ const URL_SERVER = "http://192.168.99.220:3030/";
 // LOCAL URL_SERVER
 // const URL_SERVER = "http://127.0.0.1:33008/"
 
+//change the ips
 
 
 export default {
