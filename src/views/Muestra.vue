@@ -11,7 +11,7 @@
       <v-col class="" cols="9">
         <img
           class="the_fuckin_image"
-          :src="`${url}${url_port}/muestra_image/${muestra.image}`"
+          :src="`${url}:${url_port}/muestra_image/${muestra.image}`"
           crossorigin="anonymous"
         />
         <!-- ref="capturedImage" -->
@@ -104,7 +104,7 @@ export default {
       const { url, url_port, page } = this;
       this.$refs.requestModal.open();
       axios
-        .get(`${url}${url_port}/select/${this.$route.params.id}`)
+        .get(`${url}:${url_port}/select/${this.$route.params.id}`)
         .then((response) => {
           this.muestra = response.data.data[0];
 

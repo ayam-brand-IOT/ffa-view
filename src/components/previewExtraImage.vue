@@ -105,7 +105,7 @@ export default {
       // const loading = this.$loading();
       this.$refs.loadingModal.open();
       axios
-        .post(`${this.url}${this.url_port}/add-lot-image`, formData, {
+        .post(`${this.url}:${this.url_port}/add-lot-image`, formData, {
           headers: {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",

@@ -3,6 +3,10 @@
     <!-- <div>
       <h1>Configuration</h1>
     </div> -->
+    <div class="d-flex align-baseline">
+      <h4 class="mb-3 ml-4">Last sample #:</h4>
+      <span class="ml-1">{{ last_analysed_id }}</span>
+    </div>
     <v-row style="height: 100%" justify="center">
       <v-col cols="10">
         <v-row>
@@ -74,7 +78,7 @@ export default {
     notification: pushNotification,
   },
   computed: {
-    ...mapState(["socket_instance"]),
+    ...mapState(["socket_instance", "last_analysed_id"]),
     ...mapGetters(["getAnalyzingLotNo"]),
     url_port: () => config.url_port(),
     url: () => config.url(),
@@ -228,8 +232,8 @@ export default {
     saveData() {
       const { break_point, getAnalyzingLotNo } = this;
 
-      const url = `${this.url}${this.url_port}/add-lot-tension`;
-      const data = { break_point, lot_no: getAnalyzingLotNo };
+      const url = `${this.url}:${this.url_port}/add-lot-tension`;
+      const data = { break_point, lot_no: getAnalyzingLotNo, muestra_id: this.last_analysed_id};
       // const data = { break_point:666, lot_no: "Hugo" };
 
       this.$refs.loadingModal.open();

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Vision from "../views/Vision.vue";
+import LengthCalibration from "../views/LengthCalib.vue";
+import ZOICalib from "../views/ZOICalib.vue";
 import LotInfo from "../views/LotInfo.vue";
 import ExportLot from "../views/ExportLot.vue"
 import HomeView from "../views/HomeView.vue";
@@ -73,6 +74,13 @@ const routes = [
       {
         // UserPosts will be rendered inside User's <router-view>
         // when /user/:id/posts is matched
+        path: "zoi-calibration",
+        name: "ZOI Calibration",
+        component: ZOICalib,
+      },
+      {
+        // UserPosts will be rendered inside User's <router-view>
+        // when /user/:id/posts is matched
         path: "lot-info",
         name: "Lots Information",
         component: LotInfo,
@@ -87,9 +95,9 @@ const routes = [
       {
         // UserPosts will be rendered inside User's <router-view>
         // when /user/:id/posts is matched
-        path: "vision-calibration",
-        name: "Calibrate vision",
-        component: Vision,
+        path: "length-calibration",
+        name: "Length calibration",
+        component: LengthCalibration,
       },
     ],
   },

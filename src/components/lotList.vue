@@ -99,9 +99,12 @@ export default {
     getLots() {
       // const url = 'http://127.0.0.1:${this.url_port}';
       this.$refs.loadingModal.open();
-      const url = `${this.url}${this.url_port}`;
+      const url = `${this.url}:${this.url_port}`;
+      console.warn(url);
       axios
-        .get(`${url}/lots/${this.page}`)
+        .get(`${url}/lots/${this.page}`, {
+          withCredentials: false
+        })
         .then((response) => {
           this.$refs.loadingModal.delayedClose(500);
           console.warn(response.data.data);

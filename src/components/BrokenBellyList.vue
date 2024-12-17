@@ -41,7 +41,7 @@ export default {
       const { url, url_port } = this;
       const lot_no = this.getAnalyzingLotNo;
       console.warn(lot_no);
-      const get_request = `${url}${url_port}/lot_tension/${lot_no}`;
+      const get_request = `${url}:${url_port}/lot_tension/${lot_no}`;
 
       console.warn();
       this.$refs.loadingModal.open();

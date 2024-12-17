@@ -34,7 +34,7 @@
                   >
                     <template v-slot:item.image="{ item }">
                       <v-img
-                        :src="`${url}${url_port}/muestra_image/${item.columns.image}`"
+                        :src="`${url}:${url_port}/muestra_image/${item.columns.image}`"
                         width="150"
                         height="150"
                         contain
@@ -125,12 +125,13 @@ export default {
     fetchData() {
       const { url, page, url_port } = this;
       const lot_no = this.getAnalyzingLotNo;
-      const get_request = `${url}${url_port}/lot_samples/${lot_no}`;
+      const get_request = `${url}:${url_port}/lot_samples/${lot_no}`;
 
       console.warn();
       this.$refs.loadingModal.open();
+      console.warn(get_request);
       axios
-        .get(get_request)
+        .get(get_request, { withCredentials: false })
         .then((response) => {
           console.warn(response.data.data);
           this.muestras = response.data.data;

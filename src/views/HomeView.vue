@@ -3,6 +3,8 @@
     <div class="d-flex align-baseline">
       <h3 class="mb-3 ml-4">Lot #:</h3>
       <u @click="chooseLot" class="text-blue ml-1">{{ getAnalyzingLotNo }}</u>
+      <h4 class="mb-3 ml-4">Last sample #:</h4>
+      <span class="ml-1">{{ last_analysed_id }}</span>
       <v-spacer></v-spacer>
       <v-btn @click="takeExtraPicture()">
         <v-icon>mdi-camera-plus</v-icon>
@@ -39,7 +41,9 @@
         style="border-right: solid 1px lightgray"
       >
         <h2>Weight:</h2>
-        <h1 class="ml-3">{{ live.weight }} g</h1>
+        <h1 class="ml-3" :class="`text-${weightIsStable ? 'green' : 'red'}`">
+          {{ live.weight }} g
+        </h1>
         <!-- <v-col cols="12" class="d-flex"> -->
         <v-row>
           <v-col
@@ -127,7 +131,7 @@
       @close="canceledExtraImage"
     />
     <notification ref="notification" />
-    <commandList :commands-list="getCommands"/>
+    <commandList :commands-list="getCommands" />
   </v-container>
 </template>
 
@@ -145,12 +149,13 @@ export default {
     selectLot,
     notification: pushNotification,
     PreviewExtraImage,
-    commandList ,
+    commandList,
   },
   data: () => ({
     lot: null,
     saveDialog: false,
     to: null,
+    weightIsStable: false,
     live: {
       weight: 0,
       indicators: [],
@@ -166,14 +171,14 @@ export default {
     extraImage: null,
   }),
   computed: {
-    ...mapState(["socket_instance"]),
+    ...mapState(["socket_instance", "last_analysed_id"]),
     ...mapGetters(["getAnalyzingLotNo"]),
     url_server: () => config.url_server(),
     url_port: () => config.url_port(),
     url: () => config.url(),
     getCommands: () => {
       const { actions, defects } = config;
-      return {...defects , ...actions }     
+      return { ...defects, ...actions };
     },
 
     filtered_indicators() {
@@ -189,14 +194,21 @@ export default {
       this.$refs.notification.push(message, type);
     },
 
-    updateNet(){
+    updateNet() {
       this.socket_instance.emit("update_net", {});
     },
 
     evokeAction(action) {
       switch (action) {
         case "CAPTURE":
-          this.capture();
+          // this.capture();
+          this.debounceRequested = true;
+          console.log("debounce requested");
+          this.handleWeightChanged(this.live.weight, 0);
+          this.timeoutSample = setTimeout(() => {
+            this.debounceRequested = false;
+            console.log("debounce timer cleared");
+          }, 4000); // Debounce time de 1000 ms
           break;
         case "CANCEL":
           this.cancel();
@@ -229,7 +241,9 @@ export default {
       //if in defects exist on key name with the key pressed
       if (defects.hasOwnProperty(key)) {
         event.preventDefault();
-        const index = indicators.findIndex((indicator) => indicator.key.toLowerCase() == key);
+        const index = indicators.findIndex(
+          (indicator) => indicator.key.toLowerCase() == key
+        );
 
         this.live.indicators[index].status = !indicators[index].status;
       } else if (actions.hasOwnProperty(key)) {
@@ -240,13 +254,13 @@ export default {
       }
     },
 
-    setTare(){
-      this.notify("Tare command sent", "success")
+    setTare() {
+      this.notify("Tare command sent", "success");
       this.socket_instance.emit("set_tare", {});
     },
 
-    setZero(){
-      this.notify("Zero command sent", "success")
+    setZero() {
+      this.notify("Zero command sent", "success");
       this.socket_instance.emit("set_zero", {});
     },
 
@@ -271,7 +285,12 @@ export default {
     },
 
     capture() {
+      // if(!this.weightIsStable){
+      //   this.notify("Weight is not stable", "warning");
+      //   return;
+      // }
       if (this.analyzed_image) this.saveData();
+      this.notify("Image captured", "success");
       this.captured = JSON.parse(JSON.stringify(this.live));
       this.putData("capture", {});
       this.capture_state = !this.capture_state;
@@ -352,7 +371,7 @@ export default {
     async submitRequest(formData) {
       // const loading = this.$loading();
       axios
-        .post(`${this.url}${this.url_port}/add`, formData, {
+        .post(`${this.url}:${this.url_port}/add`, formData, {
           headers: {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
@@ -362,7 +381,8 @@ export default {
           (response) => {
             // this.confirm = false;
             // this.reset();
-            //console.log(response.data);
+            console.log(response.data.id);
+            this.$store.dispatch("setLastAnalysedId", response.data.id);
             // setTimeout(() => {
             //   loading.close();
             //   window.location.reload();
@@ -418,6 +438,55 @@ export default {
       // this.capture_state = !this.capture_state;
       // this.resetLive();
     },
+
+    handleHasBeenDebounced() {
+      this.debounceRequested = false;
+      this.capture();
+    },
+
+    handleWeightChanged(newValue, oldValue) {
+      if (!this.debounceRequested) {
+        this.weightIsStable = false;
+        return;
+      }
+
+      if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      if (newValue == 0) {
+        console.warn("weight is 0");
+        return;
+      }
+
+      const difference = (Math.abs(newValue - oldValue) / oldValue) * 100;
+
+      if (difference < 2) {
+        if (this.timeoutSample) {
+          clearTimeout(this.timeoutSample);
+          this.debounceRequested = false;
+          console.log("debounce timer cleared");
+        }
+
+        console.log(
+          `El peso se ha estabilizado en: ${newValue} con una diferencia menor al 2%`
+        );
+        this.weightIsStable = true;
+        this.handleHasBeenDebounced(newValue);
+      } else {
+        // Si la diferencia es igual o mayor al 2%, aplica el debouncing
+        this.debounceTimer = setTimeout(() => {
+          if (this.timeoutSample) {
+            clearTimeout(this.timeoutSample);
+            this.debounceRequested = false;
+            console.log("debounce timer cleared");
+          }
+
+          console.log(
+            `El peso se ha estabilizado en: ${newValue} después del debounce time`
+          );
+          this.weightIsStable = true;
+          this.handleHasBeenDebounced(newValue);
+        }, 1000); // Debounce time de 1000 ms
+      }
+    },
   },
 
   beforeRouteLeave(to, from, next) {
@@ -442,7 +511,6 @@ export default {
       this.live.indicators.push({ name, status: false, key: value, id });
       this.captured.indicators.push({ name, status: false, key: value, id });
     });
-
 
     window.addEventListener("beforeunload", (event) => {
       if (this.analyzed_image) {
@@ -488,6 +556,7 @@ export default {
     this.socket_instance.off("analysis_data");
     this.socket_instance.off("frame_ready");
     if (this.interval) clearInterval(this.interval);
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
   },
 
   watch: {
@@ -499,6 +568,12 @@ export default {
           this.$refs.selectLotModal.should_persist = true;
           this.chooseLot();
         }
+      },
+      deep: true,
+    },
+    "live.weight": {
+      handler: function (newValue, oldValue) {
+        this.handleWeightChanged(newValue, oldValue);
       },
       deep: true,
     },

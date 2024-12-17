@@ -65,7 +65,7 @@ export default {
     async exportData() {
       this.$refs.loadingModal.open();
 
-      const url = `${this.url}${this.url_port}`;
+      const url = `${this.url}:${this.url_port}`;
       const end_point = `/download-lot-samples/${this.selected_item.lot_no}`;
       //192.168.1.62:3002/download-lot-samples/Hugo
 

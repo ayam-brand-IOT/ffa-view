@@ -157,7 +157,7 @@ export default {
       this.lot.order_no = this.lot.lot_no;
 
       // const url = 'http://127.0.0.1:${this.url_port}';
-      const url = `${this.url}${this.url_port}`;
+      const url = `${this.url}:${this.url_port}`;
       const end_point = editing ? "/edit_lot" : "/add_lot";
 
       axios

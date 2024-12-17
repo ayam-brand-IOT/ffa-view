@@ -1,3 +1,22 @@
+// ENSENADA DEV_PORT
+// const DEV_PORT = "3002";
+// LOCAL DEV_PORT
+// const DEV_PORT = "33006";
+const DEV_PORT = "3002";
+const PROD_PORT = "3002";
+
+// ENSENADA DEV_URL
+const DEV_URL = "http://192.168.99.220";
+// LOCAL DEV_URL
+// const DEV_URL = "https://127.0.0.1:";
+
+// ENSENADA URL_SERVER
+const URL_SERVER = "http://192.168.99.220:3030/";
+// LOCAL URL_SERVER
+// const URL_SERVER = "http://127.0.0.1:33008/"
+
+
+
 export default {
   NO_LOT_SELECTED: "Not selected",
   action_indexes: {
@@ -59,24 +78,19 @@ export default {
     e: { name: "EXTRA", description: "Extra image", shortcut: "e" },
   },
   url: function () {
-    // Get the current URL from the window location
-    // Create a new URL object from the current URL
-    // Extract the hostname (which will include the IP address)
     const currentUrl = window.location.href;
     const urlObject = new URL(currentUrl);
     const hostname = urlObject.hostname;
     
     return process.env.NODE_ENV == "production"
-      ? `http://${hostname}:`
-      : "http://192.168.1.62:";
+      ? `http://${hostname}`
+      : DEV_URL;
   },
   url_server: function () {
-    return process.env.NODE_ENV !== "production"
-      ? "http://192.168.1.62:3030/"
-      : "";
+    return process.env.NODE_ENV == "production" ? "/": URL_SERVER;
   },
   url_port: function () {
     console.warn(process.env.NODE_ENV);
-    return "3002";
+    return process.env.NODE_ENV == "production" ? PROD_PORT : DEV_PORT;
   },
 };

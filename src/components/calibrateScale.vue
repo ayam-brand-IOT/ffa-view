@@ -14,7 +14,7 @@
             height="200px"
           >
             <v-icon size="40">mdi-hook</v-icon>
-            Broken Belly
+            Belly Resistance
           </v-card>
           <v-card
             @click="setScale('weight')"
@@ -25,7 +25,7 @@
           >
             <v-icon size="40">mdi-weight-gram</v-icon>
 
-            Whole Fish
+            Fish Weight
           </v-card>
         </v-card-actions>
         <v-btn color="red" text @click="cancel()"> Cancel </v-btn>
@@ -106,7 +106,7 @@ export default {
   methods: {
     sendRequest() {
       console.log(this.step);
-      const url = `${this.url}${this.url_port}`;
+      const url = `${this.url}:${this.url_port}`;
       this.$refs.loadingModal.open();
       this.socket_instance.emit("calibrate_load_cell", {
         step: this.step + 1,
