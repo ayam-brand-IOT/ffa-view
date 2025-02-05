@@ -2,19 +2,32 @@
   <v-app>
     <v-main class="main-container">
       <v-app-bar class="px-4">
-        <v-toolbar-title class="h4-header">{{this.$route.name}}</v-toolbar-title>
+        <v-toolbar-title class="h4-header">
+          {{ this.$route.name }}
+        </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn text to="/"> <v-icon>mdi-microscope</v-icon> Analysis</v-btn>
-        <v-btn text to="/history"> <v-icon>mdi-format-list-bulleted-square</v-icon> History</v-btn>
+        <v-btn text to="/history">
+          <v-icon>mdi-format-list-bulleted-square</v-icon>
+          History
+        </v-btn>
         <v-btn text to="/config"> <v-icon>mdi-cog</v-icon> Configuration</v-btn>
-        <!-- <v-btn text to="/lotinfo">Lot Info</v-btn>
-        <v-btn text to="/vision">Vision</v-btn>
+
+        <v-btn text to="/config/lot-info">
+          <v-icon class="mr-2">mdi-package-variant-closed</v-icon>
+          Lot Info
+        </v-btn>
+        <!-- <v-btn text to="/vision">Vision</v-btn>
         <v-btn text to="/loadcell">LoadCell</v-btn> -->
       </v-app-bar>
-      <router-view/>
+      <router-view />
       <div class="status_bar">
         <div class="d-flex align-center">
-          <h5>Device Status</h5>: <u class="ml-2" :class="socket_status? 'text-green' : 'text-red'"> {{socket_status ? 'Connected' : 'Disconnected'}}</u> 
+          <h5>Device Status</h5>
+          :
+          <u class="ml-2" :class="socket_status ? 'text-green' : 'text-red'">
+            {{ socket_status ? "Connected" : "Disconnected" }}</u
+          >
         </div>
         <v-spacer></v-spacer>
         <h5>{{ currentDateTime }}</h5>
@@ -33,16 +46,16 @@ import requestModal from "./components/requestModal.vue";
 const socket = io(config.url_server());
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    requestModal
+    requestModal,
   },
   computed: {
-    ...mapState(['socket_instance']),
+    ...mapState(["socket_instance"]),
   },
   data: () => ({
     socket_status: false,
-    currentDateTime:''
+    currentDateTime: "",
     //
   }),
   methods: {
@@ -73,15 +86,15 @@ export default {
       console.warn("disconnected");
     });
 
-    this.$store.dispatch('setSocketInstance', socket);
+    this.$store.dispatch("setSocketInstance", socket);
 
     this.updateTime(); // Call the method to update the time immediately
     setInterval(this.updateTime, 1000); // Update the time every second
   },
-}
+};
 </script>
 <style>
-.status_bar{
+.status_bar {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -95,8 +108,8 @@ export default {
   /* justify-content: space-around; */
   align-items: center;
   z-index: 100;
-} 
-.main-container{
+}
+.main-container {
   margin-bottom: 50px;
 }
 .buttons {

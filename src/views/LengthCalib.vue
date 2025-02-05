@@ -1,5 +1,5 @@
 <template>
-  <v-container style="height: 100%">
+  <v-container class="length-calib" style="height: 100%">
     <v-row style="height: 100%" justify="center">
       <v-col cols="11">
         <div class="d-flex mb-5">
@@ -17,9 +17,8 @@
                   Calibrate vision measurement
                 </v-list-item-title>
 
-                <v-list-item-subtitle>
-                  Drag the lines to the desired position, enter the distance in
-                  "cm" and click on Calibrate
+                <v-list-item-subtitle class="instructions">
+                  Use the left and right arrow keys to move the lines pixel by pixel, or hold Shift while pressing the arrow keys to move them 10 pixels at a time. Once the lines are in the desired position, enter the distance in cm, press Enter to set each line, and click on Calibrate to finalize the process
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
                   <v-btn
@@ -162,6 +161,13 @@ export default {
   },
 };
 </script>
+<style lang="scss">
+.length-calib{
+  .instructions {
+      -webkit-line-clamp:none !important;
+   }
+}
+</style>
 <style lang="scss" scoped>
 .the_fuckin_image {
   width: 100%;

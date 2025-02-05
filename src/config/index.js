@@ -6,12 +6,12 @@ const DEV_PORT = "3002";
 const PROD_PORT = "3002";
 
 // ENSENADA DEV_URL
-const DEV_URL = "http://192.168.99.220";
+const DEV_URL = "http://192.168.100.64";
 // LOCAL DEV_URL
 // const DEV_URL = "https://127.0.0.1:";
 
 // ENSENADA URL_SERVER
-const URL_SERVER = "http://192.168.99.220:3030/";
+const URL_SERVER = "http://192.168.100.64:3030/";
 // LOCAL URL_SERVER
 // const URL_SERVER = "http://127.0.0.1:33008/"
 
@@ -75,7 +75,7 @@ export default {
     m: { name: "TOGGLE", description: "Toggle", shortcut: "m" },
     z: { name: "ZERO", description: "Zero", shortcut: "z" },
     t: { name: "TARE", description: "Tare", shortcut: "t" },
-    b: { name: "BBT", description: "Broken BT", shortcut: "b" },
+    b: { name: "BRT", description: "Belly Resistance Test", shortcut: "b" },
     e: { name: "EXTRA", description: "Extra image", shortcut: "e" },
   },
   url: function () {

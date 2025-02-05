@@ -10,16 +10,57 @@
 
           <!-- <h1>History</h1> -->
         </div>
-        <div class="d-flex align-baseline">
-          <h3 class="mb-3 ml-4">Lot #:</h3>
-          <u @click="chooseLot" class="text-blue ml-1">
-            {{ getAnalyzingLotNo }}
-          </u>
+        <div v-if="analyzing_lot" class="d-flex align-baseline">
+          <div class="mb-3 ml-4">
+            <h3>Lot #:</h3>
+            <u @click="chooseLot" class="text-blue ml-1">
+              {{ getAnalyzingLotNo }}
+            </u>
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Supplier:</h3>
+            {{ analyzing_lot.supplier }}
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Type</h3>
+            {{ analyzing_lot.type }}
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Specie</h3>
+            {{ analyzing_lot.fish_species }}
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Lot #:</h3>
+            {{ analyzing_lot.production_date }}
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Size: </h3>
+            {{ analyzing_lot.size }}
+          </div>
+
+          <div class="mb-3 ml-4">
+            <h3>Order no:</h3>
+            {{ analyzing_lot.order_no }}
+          </div>
+
+          <!-- production date -->
+
+          <div class="mb-3 ml-4">
+            <h3>Production date:</h3>
+            {{ analyzing_lot.production_date }}
+
+          </div>
+
         </div>
         <v-tabs v-model="tab" background-color="transparent">
           <v-tab value="1">History</v-tab>
           <v-tab value="2">Extra Images</v-tab>
-          <v-tab value="3">Broken Belly Test</v-tab>
+          <v-tab value="3">Belly Resistence Test</v-tab>
         </v-tabs>
         <v-card class="pa-4">
           <v-window v-model="tab">
@@ -113,6 +154,7 @@ export default {
     BrokenBellyList,
   },
   computed: {
+    ...mapState(["analyzing_lot"]),
     ...mapGetters(["getAnalyzingLotNo"]),
     url_server: () => config.url_server(),
     url_port: () => config.url_port(),
@@ -135,6 +177,10 @@ export default {
         .then((response) => {
           console.warn(response.data.data);
           this.muestras = response.data.data;
+          // transforming iso date to human readable date
+          this.muestras.forEach((muestra) => {
+            muestra.date = new Date(muestra.date).toLocaleDateString();
+          });
           this.$refs.loadingModal.close(100);
         })
         .catch((error) => {

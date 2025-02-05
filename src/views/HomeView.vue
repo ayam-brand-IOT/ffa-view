@@ -5,6 +5,8 @@
       <u @click="chooseLot" class="text-blue ml-1">{{ getAnalyzingLotNo }}</u>
       <h4 class="mb-3 ml-4">Last sample #:</h4>
       <span class="ml-1">{{ last_analysed_id }}</span>
+      <h4 class="mb-3 ml-4">BRT taken:</h4>
+      <span></span>
       <v-spacer></v-spacer>
       <v-btn @click="takeExtraPicture()">
         <v-icon>mdi-camera-plus</v-icon>
@@ -12,7 +14,7 @@
       </v-btn>
       <v-btn to="/broken-belly-test">
         <v-icon>mdi-arrow-expand-horizontal</v-icon>
-        BBT
+        BRT
       </v-btn>
     </div>
     <v-row>
@@ -117,8 +119,12 @@
           </div>
         </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn color="red" variant="text" @click="cancel"> No </v-btn>
-          <v-btn color="success" variant="text" @click="saveData"> Yes </v-btn>
+          <v-btn color="red" variant="text" @click="continueRoute()">
+            No
+          </v-btn>
+          <v-btn color="success" variant="text" @click="continueRoute(true)">
+            Yes
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -226,11 +232,22 @@ export default {
           if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
           this.takeExtraPicture();
           break;
-        case "BBT":
+        case "BT":
           if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
+          if (this.analyzed_image) this.saveData();
           this.$router.push("/broken-belly-test");
           break;
       }
+    },
+
+    continueRoute(save = false) {
+      if (save) {
+        this.saveData();
+      }
+      this.resetCaptured();
+      this.analyzed_image = null;
+      this.saveDialog = false;
+      this.$router.push(this.to);
     },
 
     keyboardCatch(event) {
@@ -285,10 +302,6 @@ export default {
     },
 
     capture() {
-      // if(!this.weightIsStable){
-      //   this.notify("Weight is not stable", "warning");
-      //   return;
-      // }
       if (this.analyzed_image) this.saveData();
       this.notify("Image captured", "success");
       this.captured = JSON.parse(JSON.stringify(this.live));
@@ -298,8 +311,8 @@ export default {
     },
 
     cancel() {
-      this.saveDialog = false;
       this.resetCaptured();
+      this.saveDialog = false;
       this.resetLive();
       this.analyzed_image = null;
     },
@@ -451,8 +464,9 @@ export default {
       }
 
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
       if (newValue == 0) {
-        console.warn("weight is 0");
+        this.notify("Weight is not stable", "error");
         return;
       }
 
