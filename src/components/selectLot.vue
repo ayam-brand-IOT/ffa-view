@@ -62,6 +62,7 @@ export default {
     },
     selectedItem(item) {
       this.selected_item = item;
+      
     },
     emitSelected() {
       this.$emit("update:modelValue", this.selected_item);

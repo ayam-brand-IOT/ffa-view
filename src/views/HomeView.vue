@@ -577,6 +577,13 @@ export default {
     lot: {
       handler: function (newVal, oldVal) {
         console.warn("lot changed", newVal, oldVal);
+
+        const {fish_species, type} = newVal;
+        console.warn("Vision values", fish_species, type);
+
+        // post the fish species and type to the server
+        this.socket_instance.emit("set_fish_data", { fish_species, type });
+
         this.$store.dispatch("setAnalyzingLot", newVal);
         if (newVal == null) {
           this.$refs.selectLotModal.should_persist = true;
