@@ -2,46 +2,32 @@
   <v-container style="height: 100%">
     <v-row style="height: 100%" justify="center">
       <v-col cols="11">
-        <div class="d-flex mb-5">
-          <!-- back button -->
-          <router-link to="/config" size="x-large" variant="plain">
-            <v-icon>mdi-arrow-left</v-icon> Back
+        <!-- Back Button + Title -->
+        <div class="d-flex mb-5 align-center">
+          <router-link to="/config" class="mr-2">
+            <v-btn icon variant="text">
+              <v-icon>mdi-arrow-left</v-icon>
+            </v-btn>
           </router-link>
-          <!-- <h1>History</h1> -->
+          <h2 class="font-weight-medium">2-Point Calibration</h2>
         </div>
+
+        <!-- Card -->
         <v-card elevation="2">
           <v-card-text>
-            <v-list>
-              <v-list-item>
-                <v-list-item-title>
-                  2 Point Calibration Zone of Interest
-                </v-list-item-title>
 
-                <v-list-item-subtitle>
-                  Select 2 points in the image to calibrate the zone of interest
-                </v-list-item-subtitle>
-                <v-list-item-action class="justify-end">
-                  <v-btn
-                    @click="resetSquareSelector()"
-                    color="red"
-                    class="buttons"
-                  >
-                    <v-icon>mdi-weight-gram</v-icon>
-                    Reset
-                  </v-btn>
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
-            <v-divider></v-divider>
-            <!-- <p class="mt-4">List of providers</p> -->
+            <!-- Instructions -->
+            <v-alert type="info" class="mb-4">
+              <ol class="ma-0 pl-4">
+                <li>Click on the top-left point of your area of interest.</li>
+                <li>Click on the bottom-right point to complete the rectangle.</li>
+                <li>Click <strong>Calibrate</strong> to save the zone.</li>
+              </ol>
+            </v-alert>
+
+            <!-- Image Selector -->
             <div class="content-wrapper">
               <v-col class="d-flex justify-center" cols="12">
-                <!-- <img
-                    class="the_fuckin_image elevation-2"
-                    :src="`${url_server}video_feed`"
-                    crossorigin="anonymous"
-                    ref="liveImage"
-                  /> -->
                 <TwoPointSquare
                   @onFinish="handle2Points"
                   ref="SquareSelector"
@@ -49,32 +35,54 @@
               </v-col>
             </div>
 
-            <v-row v-show="twoPoints.length == 2" class="align-center">
-              <v-btn
-                @click="saveData()"
-                color="success"
-                class="buttons"
-                :disabled="canBeSubmitted"
-              >
-                <v-icon>mdi-weight-gram</v-icon>
-                calibrate
-              </v-btn>
+            <!-- Buttons and coordinate display -->
+            <v-row class="mt-4 align-center" v-show="twoPoints.length === 2">
+              <v-col cols="12" sm="6">
+                <v-chip class="ma-1" color="info" label>
+                  Point 1: X: {{ twoPoints[0].x.toFixed(2) }}, Y: {{ twoPoints[0].y.toFixed(2) }}
+                </v-chip>
+                <v-chip class="ma-1" color="info" label>
+                  Point 2: X: {{ twoPoints[1].x.toFixed(2) }}, Y: {{ twoPoints[1].y.toFixed(2) }}
+                </v-chip>
+              </v-col>
+
+              <v-col cols="12" sm="6" class="d-flex justify-end">
+                <v-btn
+                  @click="resetSquareSelector"
+                  color="error"
+                  variant="outlined"
+                  class="mr-3"
+                >
+                  <v-icon left>mdi-refresh</v-icon>
+                  Reset
+                </v-btn>
+
+                <v-btn
+                  @click="saveData"
+                  color="success"
+                  :disabled="!readyToSubmit"
+                >
+                  <v-icon left>mdi-check-bold</v-icon>
+                  Calibrate
+                </v-btn>
+              </v-col>
             </v-row>
+
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
   </v-container>
 </template>
+
 <script>
 import axios from "axios";
 import TwoPointSquare from "@/components/TwoPointSquare.vue";
 import config from "@/config";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapState, mapGetters } from "vuex";
 
 export default {
-  name: "LotInfo",
+  name: "TwoPointCalibration",
   components: {
     TwoPointSquare,
   },
@@ -86,74 +94,45 @@ export default {
   computed: {
     url_port: () => config.url_port(),
     url_server: () => config.url_server(),
-    ...mapState({
-      // config: state => state.config
-    }),
-    ...mapGetters({
-      // config: 'config'
-    }),
-    canBeSubmitted() {
-      return !(this.twoPoints.length === 2);
+    ...mapState({}),
+    ...mapGetters({}),
+    readyToSubmit() {
+      return this.twoPoints.length === 2;
     },
   },
   methods: {
     resetSquareSelector() {
       this.$refs.SquareSelector.reset();
+      this.twoPoints = [];
     },
     handle2Points(points) {
       this.twoPoints = points;
-      console.log("points", points);
+      console.log("Selected points:", points);
     },
     saveData() {
-      this.submitRequest(this.twoPoints);
+      const data = this.twoPoints;
+      this.submitRequest(data);
     },
     async submitRequest(jsonData) {
-      // const loading = this.$loading();
-      axios
-        .post(`${this.url_server}calibrate_zoi`, jsonData, {
+      try {
+        await axios.post(`${this.url_server}calibrate_zoi`, jsonData, {
           withCredentials: false,
           headers: {
             Accept: "application/json",
           },
-        })
-        .then(
-          (response) => {
-            // this.confirm = false;
-            // this.reset();
-            //console.log(response.data);
-            // setTimeout(() => {
-            //   loading.close();
-            //   window.location.reload();
-            // }, 1000);
-            // this.$notify({
-            //   message: "Información guardada con éxito.",
-            //   type: "success"
-            // });
-          },
-          (error) => {
-            this.confirm = false;
-            console.log(error);
-            // setTimeout(() => {
-            //   loading.close();
-            // }, 1000);
-            // this.$notify.error("Ha habido un error.");
-          }
-        );
+        });
+        // Feedback opcional
+        // this.$notify({ message: 'Zone calibrated successfully', type: 'success' });
+      } catch (error) {
+        console.error("Error sending calibration:", error);
+        // this.$notify.error("Failed to calibrate zone.");
+      }
     },
   },
-  mounted() {},
 };
 </script>
+
 <style lang="scss" scoped>
-.the_fuckin_image {
-  width: 100%;
-  min-width: 100%;
-  min-height: 100%;
-  border: solid 1px gray;
-  border-radius: 5px;
-  background-color: gray;
-  /* height: 300px; */
-}
 .content-wrapper {
   display: flex;
   flex-direction: column;

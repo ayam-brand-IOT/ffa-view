@@ -6,14 +6,14 @@ const DEV_PORT = "3002";
 const PROD_PORT = "3002";
 
 // ENSENADA DEV_URL
-const DEV_URL = "http://192.168.1.226";
+// const DEV_URL = "http://192.168.1.226";
 // LOCAL DEV_URL
-// const DEV_URL = "https://127.0.0.1:";
+const DEV_URL = "http://127.0.0.1";
 
 // ENSENADA URL_SERVER
-const URL_SERVER = "http://192.168.1.226:3030/";
+// const URL_SERVER = "http://192.168.1.226:3030/";
 // LOCAL URL_SERVER
-// const URL_SERVER = "http://127.0.0.1:33008/"
+const URL_SERVER = "http://127.0.0.1:33004/"
 
 //change the ips
 
