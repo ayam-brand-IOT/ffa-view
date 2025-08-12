@@ -39,10 +39,10 @@
             <v-row class="mt-4 align-center" v-show="twoPoints.length === 2">
               <v-col cols="12" sm="6">
                 <v-chip class="ma-1" color="info" label>
-                  Point 1: X: {{ twoPoints[0].x.toFixed(2) }}, Y: {{ twoPoints[0].y.toFixed(2) }}
+                  Point 1: X: {{ twoPoints[0]?.x.toFixed(2) }}, Y: {{ twoPoints[0]?.y.toFixed(2) }}
                 </v-chip>
                 <v-chip class="ma-1" color="info" label>
-                  Point 2: X: {{ twoPoints[1].x.toFixed(2) }}, Y: {{ twoPoints[1].y.toFixed(2) }}
+                  Point 2: X: {{ twoPoints[1]?.x.toFixed(2) }}, Y: {{ twoPoints[1]?.y.toFixed(2) }}
                 </v-chip>
               </v-col>
 

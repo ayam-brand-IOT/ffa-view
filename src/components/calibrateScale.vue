@@ -24,7 +24,6 @@
             height="200px"
           >
             <v-icon size="40">mdi-weight-gram</v-icon>
-
             Fish Weight
           </v-card>
         </v-card-actions>
@@ -40,10 +39,16 @@
         <v-card-actions>
           <v-btn color="red" text @click="cancel()"> Cancel </v-btn>
           <v-spacer></v-spacer>
-          <v-btn :color="step < 3 ? 'primary' : 'green'" text @click="nextStep">
-            {{ step == 3 ? "Save" : "Next" }}
+          <v-btn
+            :disabled="busy"
+            :loading="busy"
+            :color="step < 3 ? 'primary' : 'green'"
+            text
+            @click="nextStep"
+          >
+            {{ step === 3 ? "Save" : "Next" }}
             <v-icon right>
-              {{ `mdi-${step == 3 ? "check" : "arrow-right"}` }}
+              {{ `mdi-${step === 3 ? "check" : "arrow-right"}` }}
             </v-icon>
           </v-btn>
         </v-card-actions>
@@ -57,110 +62,113 @@
     </v-btn>
   </div>
 </template>
+
 <script>
-import axios from "axios";
-import config from "@/config";
 import { mapState } from "vuex";
 import requestModal from "./requestModal.vue";
 
 export default {
   name: "calibrateScale",
-  components: {
-    requestModal,
-  },
+  components: { requestModal },
   data: () => ({
     calibrate_dialog: false,
     choose_scale: false,
     step: 0,
-    args: 0,
+    args: null, // "belly" | "weight"
     responseTimeOut: null,
-    step_info: {
-      message: "",
-      icon: "",
-    },
+    busy: false,
+    step_info: { message: "", icon: "" },
   }),
   computed: {
     ...mapState(["socket_instance"]),
-    url_port: () => config.url_port(),
-    url: () => config.url(),
     calibration_steps: () => [
-      {
-        message: "Click next to start calibration",
-        icon: "mdi-weight-gram",
-      },
-      {
-        message: "Place the empty container on the scale and press OK",
-        icon: "mdi-weight-gram",
-      },
-      {
-        message:
-          "Place the container with the weight on the scale and press OK",
-        icon: "mdi-weight-gram",
-      },
-      {
-        message: "Calibration complete",
-        icon: "mdi-check",
-      },
+      { message: "Click next to start calibration", icon: "mdi-weight-gram" },
+      { message: "Place the empty container on the scale and press OK", icon: "mdi-weight-gram" },
+      { message: "Place the container with the weight on the scale and press OK", icon: "mdi-weight-gram" },
+      { message: "Calibration complete", icon: "mdi-check" },
     ],
   },
   methods: {
-    sendRequest() {
-      console.log(this.step);
-      const url = `${this.url}:${this.url_port}`;
+    openModal() {
+      this.choose_scale = true;
+      // No emit de "pause_net_update": no existe en tu server y no lo tocaremos
+    },
+    setScale(scale) {
+      this.args = scale; // "belly" o "weight"
+      this.step = 0;
+      this.step_info = this.calibration_steps[0];
+      this.choose_scale = false;
+      this.calibrate_dialog = true;
+    },
+    nextStep() {
+      // Envía el paso actual + 1 (server espera 1..4)
+      if (!this.socket_instance) return;
+      if (this.args !== "belly" && this.args !== "weight") return;
+
+      this.busy = true;
       this.$refs.loadingModal.open();
+
       this.socket_instance.emit("calibrate_load_cell", {
         step: this.step + 1,
         args: this.args,
       });
+
+      clearTimeout(this.responseTimeOut);
       this.responseTimeOut = setTimeout(() => {
         this.$refs.loadingModal.fail();
+        this.busy = false;
       }, 10000);
     },
-    nextStep() {
-      //   this.step++;
-      this.sendRequest();
-    },
-    openModal() {
-      // this.calibrate_dialog = true;
-      this.choose_scale = true;
-      this.socket_instance.emit("pause_net_update", true);
-    },
-    setScale(scale) {
-      this.choose_scale = false;
-      this.calibrate_dialog = true;
-      this.step_info = this.calibration_steps[0];
-
-      this.args = scale;
-    },
     cancel() {
+      // Cierra y garantiza salir de modo calibración en el server
       this.step = 0;
       this.choose_scale = false;
       this.calibrate_dialog = false;
+      this.busy = false;
+      clearTimeout(this.responseTimeOut);
+      if (this.socket_instance) {
+        this.socket_instance.emit("resume_net_update"); // tu server la soporta
+      }
+      this.$refs.loadingModal?.close?.();
     },
     resetModal() {
       this.step = 0;
       this.calibrate_dialog = false;
-      this.socket_instance.emit("resume_net_update", true);
+      this.busy = false;
+      if (this.socket_instance) {
+        this.socket_instance.emit("resume_net_update");
+      }
+    },
+    _onCalibAck() {
+      clearTimeout(this.responseTimeOut);
+      this.$refs.loadingModal.close();
+      this.busy = false;
+
+      this.step++;
+      if (this.step >= 4) {
+        // terminado
+        this.resetModal();
+      } else {
+        this.step_info = this.calibration_steps[this.step];
+      }
     },
   },
   watch: {
-    step: function (newStep) {
+    step(newStep) {
       this.step_info = this.calibration_steps[newStep];
-      //   if (newStep > 0) this.sendRequest();
     },
   },
   mounted() {
     this.step_info = this.calibration_steps[0];
 
-    this.socket_instance.on("calibration_step_commited", (data) => {
-      clearTimeout(this.responseTimeOut);
-      this.step++;
-      if (this.step == 4) this.resetModal();
-      this.$refs.loadingModal.close();
-    });
+    if (this.socket_instance) {
+      this.socket_instance.on("calibration_step_commited", this._onCalibAck);
+    }
   },
-  unmounted() {
-    // remove handler from socket
+  unmounted() { // Vue 3
+    if (this.socket_instance) {
+      this.socket_instance.off("calibration_step_commited", this._onCalibAck);
+    }
   },
 };
 </script>
