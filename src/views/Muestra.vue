@@ -52,7 +52,7 @@
             <h2 class="text-center">{{ muestra.height }}mm</h2>
           </v-col>
           <v-col>
-            <h3 class="text-center">Weight:</h3>
+            <h3 class="text-center">Length:</h3>
             <h2 class="text-center">{{ muestra.length }}mm</h2>
           </v-col>
         </v-row>
@@ -120,6 +120,8 @@ export default {
           
           defects.forEach((defect) => this.indicators[defect].status = true);
 
+          console.warn(this.muestra);
+          
         })
         .catch((error) => {
           console.error(error);
