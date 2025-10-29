@@ -15,12 +15,13 @@
         <!-- Card -->
         <v-card elevation="2">
           <v-card-text>
-
             <!-- Instructions -->
             <v-alert type="info" class="mb-4">
               <ol class="ma-0 pl-4">
                 <li>Click on the top-left point of your area of interest.</li>
-                <li>Click on the bottom-right point to complete the rectangle.</li>
+                <li>
+                  Click on the bottom-right point to complete the rectangle.
+                </li>
                 <li>Click <strong>Calibrate</strong> to save the zone.</li>
               </ol>
             </v-alert>
@@ -39,10 +40,12 @@
             <v-row class="mt-4 align-center" v-show="twoPoints.length === 2">
               <v-col cols="12" sm="6">
                 <v-chip class="ma-1" color="info" label>
-                  Point 1: X: {{ twoPoints[0]?.x.toFixed(2) }}, Y: {{ twoPoints[0]?.y.toFixed(2) }}
+                  Point 1: X: {{ twoPoints[0]?.x.toFixed(2) }}, Y:
+                  {{ twoPoints[0]?.y.toFixed(2) }}
                 </v-chip>
                 <v-chip class="ma-1" color="info" label>
-                  Point 2: X: {{ twoPoints[1]?.x.toFixed(2) }}, Y: {{ twoPoints[1]?.y.toFixed(2) }}
+                  Point 2: X: {{ twoPoints[1]?.x.toFixed(2) }}, Y:
+                  {{ twoPoints[1]?.y.toFixed(2) }}
                 </v-chip>
               </v-col>
 
@@ -67,11 +70,11 @@
                 </v-btn>
               </v-col>
             </v-row>
-
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+    <notification ref="notification" />
   </v-container>
 </template>
 
@@ -79,12 +82,15 @@
 import axios from "axios";
 import TwoPointSquare from "@/components/TwoPointSquare.vue";
 import config from "@/config";
+import pushNotification from "@/components/pushNotification.vue";
+
 import { mapState, mapGetters } from "vuex";
 
 export default {
   name: "TwoPointCalibration",
   components: {
     TwoPointSquare,
+    notification: pushNotification,
   },
   data() {
     return {
@@ -113,6 +119,9 @@ export default {
       const data = this.twoPoints;
       this.submitRequest(data);
     },
+    notify(text, type, time) {
+      this.$refs.notification.push(text, type, time);
+    },
     async submitRequest(jsonData) {
       try {
         await axios.post(`${this.url_server}calibrate_zoi`, jsonData, {
@@ -122,10 +131,13 @@ export default {
           },
         });
         // Feedback opcional
-        // this.$notify({ message: 'Zone calibrated successfully', type: 'success' });
+        this.notify("Zone calibrated successfully", "success");
+        // CLEAR FIELDS
+        this.twoPoints = [];
+        this.resetSquareSelector();
       } catch (error) {
         console.error("Error sending calibration:", error);
-        // this.$notify.error("Failed to calibrate zone.");
+        this.notify("Failed to calibrate zone.", "error");
       }
     },
   },

@@ -14,21 +14,32 @@
     </thead>
     <tbody>
       <tr
-        :class="[
-          selectable ? 'selectable' : null,
-          selectedIndex === index ? 'selected-item' : null,
-        ]"
-        @click="selectable ? rowClicked(item, index) : null"
-        v-for="(item, index) in lotList"
+        v-for="(item, index) in filteredLotList"
         :key="item.lot_id"
       >
         <td v-for="row in Object.keys(lotStructure)">
           {{ item[row] }}
         </td>
-        <td v-if="editable">
-          <v-btn class="edit-button" icon color="blue" @click="editLot(item)">
-            <v-icon>mdi-pencil</v-icon>
+        <td >
+          <v-btn v-if="editable" class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
+            <v-icon>mdi-format-list-bulleted-square</v-icon>
           </v-btn>
+          <v-btn
+            v-if="selectable"
+            class="edit-button"
+            icon
+            color="green"
+            @click="analyseLot(item)"
+          >
+            <v-icon>mdi-chevron-right</v-icon>
+          </v-btn>
+        </td>
+      </tr>
+      <!-- No results message -->
+      <tr v-if="filteredLotList.length === 0 && lotList.length > 0">
+        <td :colspan="Object.keys(lotStructure).length + 1" class="text-center pa-4">
+          <v-icon color="grey" class="mr-2">mdi-magnify</v-icon>
+          No lots found matching your search criteria
         </td>
       </tr>
     </tbody>
@@ -38,6 +49,7 @@
 <script>
 import axios from "axios";
 import config from "@/config";
+
 import requestModal from "./requestModal.vue";
 
 export default {
@@ -60,6 +72,34 @@ export default {
         wms_code: "",
       };
     },
+    filteredLotList() {
+      console.log('Search query:', this.searchQuery, 'Type:', typeof this.searchQuery);
+      console.log('Lot list length:', this.lotList.length);
+      
+      // Ensure searchQuery is a string
+      const searchString = String(this.searchQuery || '').trim();
+      
+      if (!searchString) {
+        return this.lotList;
+      }
+      
+      const query = searchString.toLowerCase();
+      
+      const filtered = this.lotList.filter(lot => {
+        const wmsCode = (lot.wms_code || "").toString().toLowerCase();
+        const lotNo = (lot.lot_no || "").toString().toLowerCase();
+        const supplier = (lot.supplier || "").toString().toLowerCase();
+        
+        const matches = wmsCode.includes(query) || 
+                       lotNo.includes(query) || 
+                       supplier.includes(query);
+        
+        return matches;
+      });
+      
+      console.log('Filtered results:', filtered.length);
+      return filtered;
+    }
   },
   data: () => ({
     page: 1,
@@ -73,7 +113,7 @@ export default {
       type: "",
       size: "",
       order_no: "",
-      wms_code: "",
+      wms_code: ""
     },
   }),
   props: {
@@ -85,13 +125,20 @@ export default {
       type: Boolean,
       default: false,
     },
+    searchQuery: {
+      type: String,
+      default: "",
+    },
+  },
+  watch: {
+    searchQuery(newVal, oldVal) {
+      console.log('Search query changed from:', oldVal, 'to:', newVal);
+    }
   },
   methods: {
-    rowClicked(item, index) {
-      //   console.log(item);
-      console.log(index);
-      this.selectedIndex = index;
+    analyseLot(item) {
       this.$emit("rowClicked", item);
+     
     },
     editLot(item) {
       this.$emit("editLot", item);
@@ -102,7 +149,7 @@ export default {
       const url = `${this.url}:${this.url_port}`;
       console.warn(url);
       axios
-        .get(`${url}/lots/${this.page}`, {
+        .get(`${url}/lots`, {
           withCredentials: false
         })
         .then((response) => {

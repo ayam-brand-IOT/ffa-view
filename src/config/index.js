@@ -11,11 +11,11 @@ const PROD_PORT = "3002";
 const DEV_URL = "http://127.0.0.1";
 
 // ENSENADA URL_SERVER
-// const URL_SERVER = "http://192.168.1.226:3030/";
+const URL_SERVER = "http://127.0.0.1:3030/";
 // LOCAL URL_SERVER
-const URL_SERVER = "http://127.0.0.1:33004/"
+// const URL_SERVER = "http://127.0.0.1:33004/"
+// const URL_SERVER = "http://192.168.99.134:3030/"
 
-//change the ips
 
 
 export default {

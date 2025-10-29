@@ -57,7 +57,16 @@
     </v-row>
     <request-modal ref="loadingModal" />
     <notification ref="notification" />
-    <commandList :commands-list="getCommands" />
+    <commandList :commands-list="getCommands" ref="commandList" />
+    <v-btn
+      style="position: absolute; bottom: 55px; right: 15px"
+      color="primary"
+      icon
+      @click="openCommandList"
+      title="help btn"
+    >
+      <v-icon>mdi-help-circle</v-icon>
+    </v-btn>
   </v-container>
 </template>
 <script>
@@ -109,7 +118,7 @@ export default {
     evokeAction(action) {
       switch (action) {
         case "HOME":
-          this.$router.push("/");
+          this.$router.push("/analyse-lot");
           break;
         case "START":
           this.run_test();
@@ -140,6 +149,10 @@ export default {
         console.warn("action", index);
         this.evokeAction(index);
       }
+    },
+
+    openCommandList() {
+      this.$refs.commandList.open();
     },
 
     setTare() {
@@ -233,7 +246,11 @@ export default {
       const { break_point, getAnalyzingLotNo } = this;
 
       const url = `${this.url}:${this.url_port}/add-lot-tension`;
-      const data = { break_point, lot_no: getAnalyzingLotNo, muestra_id: this.last_analysed_id};
+      const data = {
+        break_point,
+        lot_no: getAnalyzingLotNo,
+        muestra_id: this.last_analysed_id,
+      };
       // const data = { break_point:666, lot_no: "Hugo" };
 
       this.$refs.loadingModal.open();

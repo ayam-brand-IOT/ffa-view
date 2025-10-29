@@ -2,7 +2,7 @@
   <v-container>
     <div class="d-flex">
       <!-- back button -->
-      <v-btn to="/history" size="x-large" variant="plain">
+      <v-btn to="/log" size="x-large" variant="plain">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <h1>Details</h1>

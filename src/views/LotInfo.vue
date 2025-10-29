@@ -24,8 +24,26 @@
               </v-list-item>
             </v-list>
             <v-divider></v-divider>
-            <p class="mt-4">List of providers</p>
-            <lot-list ref="lots" editable v-on:editLot="selectedLot"/>
+            <p class="mt-4">List of lots - Click the log icon to view lot details</p>
+            
+            <!-- Search Field -->
+            <div class="d-flex align-center mb-4">
+              <v-text-field
+                v-model="searchQuery"
+                label="Search lots..."
+                placeholder="Search by WMS Code, Lot Number, or Supplier"
+                prepend-inner-icon="mdi-magnify"
+                clearable
+                outlined
+                dense
+                class="flex-grow-1"
+                hint="Search across WMS Code, Lot Number, and Supplier fields"
+                persistent-hint
+              ></v-text-field>
+
+            </div>
+            
+            <lot-list ref="lots" editable :search-query="searchQuery" v-on:editLot="selectedLot"/>
           </v-card-text>
         </v-card>
       </v-col>
@@ -48,6 +66,7 @@ export default {
   },
   data() {
     return {
+      searchQuery: "",
       lot: {
         supplier: "",
         lot_no: "",
@@ -83,16 +102,33 @@ export default {
       // config: 'config'
     }),
   },
+  watch: {
+    searchQuery(newVal) {
+      console.log('LotInfo searchQuery changed to:', newVal);
+    }
+  },
   methods: {
+    clearSearch() {
+      this.searchQuery = "";
+    },
     editedHandler() {
       console.log("editedHandler");
       this.$refs.lots.getLots();
     },
     selectedLot(item) {
-      this.$refs.addLotModal.editItem(item);
+      // Set the selected lot in the store
+      this.$store.dispatch("setAnalyzingLot", item);
+      
+      // Navigate to log with a query parameter indicating the source
+      this.$router.push({ 
+        name: "Log", 
+        query: { from: 'lot-info' } 
+      });
     },
   },
   mounted() {
+    // Ensure searchQuery is properly initialized
+    this.searchQuery = "";
   },
 };
 </script>

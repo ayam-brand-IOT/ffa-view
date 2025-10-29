@@ -7,10 +7,6 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn text to="/"> <v-icon>mdi-microscope</v-icon> Analysis</v-btn>
-        <v-btn text to="/history">
-          <v-icon>mdi-format-list-bulleted-square</v-icon>
-          History
-        </v-btn>
         <v-btn text to="/config"> <v-icon>mdi-cog</v-icon> Configuration</v-btn>
 
         <v-btn text to="/config/lot-info">
@@ -111,6 +107,7 @@ export default {
 }
 .main-container {
   margin-bottom: 50px;
+  display: flex;
 }
 .buttons {
   margin: 5px 5px;

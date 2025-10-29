@@ -13,14 +13,32 @@
 
         <v-card elevation="2">
           <v-card-text>
-
             <!-- Clear instructions -->
             <v-alert type="info" class="mb-4">
               <ol class="ma-0 pl-4">
-                <li>Use the <strong>arrow keys <v-icon>mdi-arrow-left-thick</v-icon> <v-icon>mdi-arrow-right-thick</v-icon> </strong> to move the lines pixel by pixel.</li>
-                <li>Hold <strong> <v-icon>mdi-apple-keyboard-shift</v-icon> Shift</strong> to move by 10 pixels at a time.</li>
-                <li>Adjust both lines to mark the real-world distance. and clic <strong> <v-icon>mdi-keyboard-return</v-icon> Enter</strong></li>
-                <li>Enter the actual distance in <strong>centimeters</strong> and click <strong>Calibrate</strong>.</li>
+                <li>
+                  Use the
+                  <strong
+                    >arrow keys <v-icon>mdi-arrow-left-thick</v-icon>
+                    <v-icon>mdi-arrow-right-thick</v-icon>
+                  </strong>
+                  to move the lines pixel by pixel.
+                </li>
+                <li>
+                  Hold
+                  <strong>
+                    <v-icon>mdi-apple-keyboard-shift</v-icon> Shift</strong
+                  >
+                  to move by 10 pixels at a time.
+                </li>
+                <li>
+                  Adjust both lines to mark the real-world distance. and clic
+                  <strong> <v-icon>mdi-keyboard-return</v-icon> Enter</strong>
+                </li>
+                <li>
+                  Enter the actual distance in <strong>centimeters</strong> and
+                  click <strong>Calibrate</strong>.
+                </li>
               </ol>
             </v-alert>
 
@@ -41,8 +59,8 @@
               </v-col>
               <v-col cols="12" sm="5">
                 <v-text-field
-                  v-model="distanceOnCm"
-                  label="Actual Distance (cm)"
+                  v-model="distanceOnMm"
+                  label="Actual Distance (mm)"
                   variant="underlined"
                   type="number"
                   min="0"
@@ -73,6 +91,8 @@
         </v-card>
       </v-col>
     </v-row>
+    <notification ref="notification" />
+    <requestModal ref="loadingModal" />
   </v-container>
 </template>
 
@@ -80,17 +100,22 @@
 import axios from "axios";
 import MovingLine from "@/components/MovingLine.vue";
 import config from "@/config";
+import requestModal from "@/components/requestModal.vue";
+import pushNotification from "@/components/pushNotification.vue";
 import { mapState, mapGetters } from "vuex";
 
 export default {
   name: "LengthCalib",
   components: {
     MovingLine,
+    notification: pushNotification,
+    requestModal,
+
   },
   data() {
     return {
       amountOfPixels: 0,
-      distanceOnCm: 0,
+      distanceOnMm: 0,
     };
   },
   computed: {
@@ -99,7 +124,7 @@ export default {
     ...mapState({}),
     ...mapGetters({}),
     canBeSubmitted() {
-      return !(this.amountOfPixels > 0 && this.distanceOnCm > 0);
+      return !(this.amountOfPixels > 0 && this.distanceOnMm > 0);
     },
   },
   methods: {
@@ -110,11 +135,12 @@ export default {
       this.amountOfPixels = px.distance;
     },
     saveData() {
-      const ratio = this.distanceOnCm / this.amountOfPixels;
+      const ratio = this.distanceOnMm / this.amountOfPixels;
       const jsonData = { ratio };
       this.submitRequest(jsonData);
     },
     async submitRequest(jsonData) {
+      this.$refs.loadingModal.open();
       try {
         await axios.post(`${this.url_server}length_calibration`, jsonData, {
           withCredentials: false,
@@ -122,10 +148,23 @@ export default {
             Accept: "application/json",
           },
         });
+        this.$refs.loadingModal.close(500);
+        this.notify("Length calibrated successfully", "success");
+
+        // CLEAR FIELDS
+        this.amountOfPixels = 0;
+        this.distanceOnMm = 0;
+        this.resetLineSelector();
+
         // Optionally notify user here
       } catch (error) {
         console.error("Calibration submission failed:", error);
+        this.notify("Length calibration failed.", "error");
+        this.$refs.loadingModal.fail();
       }
+    },
+    notify(text, type, time) {
+      this.$refs.notification.push(text, type, time);
     },
   },
 };

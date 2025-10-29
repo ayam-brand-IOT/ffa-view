@@ -25,11 +25,6 @@
           <v-icon>mdi-close</v-icon>
           Cancel
         </v-btn>
-        <v-spacer></v-spacer>
-        <v-btn :disabled="!selected_item" color="primary" @click="emitSelected">
-          <v-icon>mdi-check</v-icon>
-          Select
-        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -62,11 +57,12 @@ export default {
     },
     selectedItem(item) {
       this.selected_item = item;
+      this.$emit("update:modelValue", this.selected_item);
+      this.close();
       
     },
     emitSelected() {
-      this.$emit("update:modelValue", this.selected_item);
-      this.close();
+      
     },
   },
   //   watch: {

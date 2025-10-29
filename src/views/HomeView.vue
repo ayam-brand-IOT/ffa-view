@@ -1,23 +1,27 @@
 <template>
-  <v-container fluid>
+  <v-container fluid class="d-flex flex-column">
     <div class="d-flex align-baseline">
       <h3 class="mb-3 ml-4">Lot #:</h3>
-      <u @click="chooseLot" class="text-blue ml-1">{{ getAnalyzingLotNo }}</u>
+      <span @click="" class="ml-1">{{ getAnalyzingLotNo }}</span>
       <h4 class="mb-3 ml-4">Last sample #:</h4>
       <span class="ml-1">{{ last_analysed_id }}</span>
       <h4 class="mb-3 ml-4">BRT taken:</h4>
       <span></span>
       <v-spacer></v-spacer>
-      <v-btn @click="takeExtraPicture()">
+      <v-btn class="ml-3" text to="/log">
+        <v-icon>mdi-format-list-bulleted-square</v-icon>
+        Log
+      </v-btn>
+      <v-btn class="ml-3" @click="takeExtraPicture()">
         <v-icon>mdi-camera-plus</v-icon>
         Take extra picture
       </v-btn>
-      <v-btn to="/broken-belly-test">
+      <v-btn class="ml-3" to="/broken-belly-test">
         <v-icon>mdi-arrow-expand-horizontal</v-icon>
         BRT
       </v-btn>
     </div>
-    <v-row>
+    <v-row style="flex: 1">
       <v-col style="border-right: solid 1px lightgray" cols="6">
         <img
           class="the_fuckin_image elevation-2"
@@ -36,7 +40,8 @@
         />
       </v-col>
     </v-row>
-    <v-row style="border-bottom: solid 1px lightgray" class="pb-2">
+
+    <v-row style="border-bottom: solid 1px lightgray; flex: none" class="pb-2">
       <v-col
         cols="6"
         class="d-flex flex-column px-7"
@@ -90,7 +95,8 @@
         <!-- </v-col> -->
       </v-col>
     </v-row>
-    <v-row class="mt-0">
+
+    <div class="mt-0">
       <v-spacer></v-spacer>
 
       <v-btn
@@ -102,7 +108,7 @@
         <v-icon>mdi-check</v-icon>
         Finish Lot
       </v-btn>
-    </v-row>
+    </div>
 
     <v-dialog
       persistent
@@ -129,7 +135,16 @@
       </v-card>
     </v-dialog>
 
-    <select-lot ref="selectLotModal" v-model="lot" />
+    <v-btn
+      style="  position: absolute;bottom: 55px;right: 15px;"
+      color="primary"
+      icon
+      @click="openCommandList"
+      title="help btn"
+    >
+      <v-icon>mdi-help-circle</v-icon>
+    </v-btn>
+
     <preview-extra-image
       ref="imagePreview"
       :image="extraImage"
@@ -137,7 +152,8 @@
       @close="canceledExtraImage"
     />
     <notification ref="notification" />
-    <commandList :commands-list="getCommands" />
+    <!-- trigger command list with help btn -->
+    <commandList :commands-list="getCommands" ref="commandList" />
   </v-container>
 </template>
 
@@ -145,14 +161,12 @@
 import axios from "axios";
 import config from "../config";
 import { mapState, mapGetters } from "vuex";
-import selectLot from "@/components/selectLot.vue";
 import commandList from "@/components/commandList.vue";
 import pushNotification from "@/components/pushNotification.vue";
 import PreviewExtraImage from "@/components/previewExtraImage.vue";
 
 export default {
   components: {
-    selectLot,
     notification: pushNotification,
     PreviewExtraImage,
     commandList,
@@ -199,6 +213,9 @@ export default {
     notify(message, type = "success") {
       this.$refs.notification.push(message, type);
     },
+    openCommandList() {
+      this.$refs.commandList.open();
+    },
 
     updateNet() {
       this.socket_instance.emit("update_net", {});
@@ -232,7 +249,7 @@ export default {
           if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
           this.takeExtraPicture();
           break;
-        case "BT":
+        case "BRT":
           if (config.NO_LOT_SELECTED == this.getAnalyzingLotNo) return;
           if (this.analyzed_image) this.saveData();
           this.$router.push("/broken-belly-test");
@@ -299,6 +316,9 @@ export default {
 
     finishLotAnalysis() {
       this.lot = null;
+      this.$store.dispatch("setAnalyzingLot", null);
+      this.$router.push({ name: "Select Lot" });
+      // alert("Lot analysis finished");
     },
 
     capture() {
@@ -346,10 +366,6 @@ export default {
       while (n--) u8arr[n] = bstr.charCodeAt(n);
 
       return new File([u8arr], filename, { type: mime });
-    },
-
-    chooseLot() {
-      this.$refs.selectLotModal.open_select = true;
     },
 
     saveData() {
@@ -472,7 +488,7 @@ export default {
 
       const difference = (Math.abs(newValue - oldValue) / oldValue) * 100;
 
-      if (difference < 2) {
+      if (difference < 5) {
         if (this.timeoutSample) {
           clearTimeout(this.timeoutSample);
           this.debounceRequested = false;
@@ -555,8 +571,6 @@ export default {
     });
 
     if (this.getAnalyzingLotNo == config.NO_LOT_SELECTED) {
-      this.$refs.selectLotModal.should_persist = true;
-      this.chooseLot();
     }
   },
 
@@ -578,17 +592,15 @@ export default {
       handler: function (newVal, oldVal) {
         console.warn("lot changed", newVal, oldVal);
 
-        const {fish_species, type} = newVal;
+        this.$store.dispatch("setAnalyzingLot", newVal);
+
+        const fish_species = newVal?.fish_species;
+        const type = newVal?.type;
+
         console.warn("Vision values", fish_species, type);
 
         // post the fish species and type to the server
         this.socket_instance.emit("set_fish_data", { fish_species, type });
-
-        this.$store.dispatch("setAnalyzingLot", newVal);
-        if (newVal == null) {
-          this.$refs.selectLotModal.should_persist = true;
-          this.chooseLot();
-        }
       },
       deep: true,
     },
@@ -620,11 +632,7 @@ export default {
   height: 24px;
   border-radius: 12px;
 }
-.history-btn {
-  position: absolute;
-  bottom: 55px;
-  right: 55px;
-}
+
 .inactive {
   background-color: red;
 }

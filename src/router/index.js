@@ -7,21 +7,28 @@ import HomeView from "../views/HomeView.vue";
 import LoadCell from "../views/LoadCell.vue";
 import Config from "../views/Configuration.vue";
 import ConfigWrapper from "../views/ConfigWrapper.vue";
+import SelectLot from "@/views/SelectLot.vue";
+import FishParameters from "../views/FishParameters.vue";
 
 const routes = [
   {
     path: "/",
-    name: "Frozen Fish Analyzer",
+    name: "Select Lot",
+    component: SelectLot,
+  },
+  {
+    path: "/analyse-lot",
+    name: "Analyse Lot",
     component: HomeView,
   },
   {
-    path: "/history",
-    name: "History",
+    path: "/log",
+    name: "Log",
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-      import(/* webpackChunkName: "history" */ "../views/History.vue"),
+      import(/* webpackChunkName: "log" */ "../views/Log.vue"),
   },
   {
     path: "/broken-belly-test",
@@ -98,6 +105,12 @@ const routes = [
         path: "length-calibration",
         name: "Length calibration",
         component: LengthCalibration,
+      },
+      {
+        // Fish parameters configuration
+        path: "fish-parameters",
+        name: "Fish Parameters",
+        component: FishParameters,
       },
     ],
   },

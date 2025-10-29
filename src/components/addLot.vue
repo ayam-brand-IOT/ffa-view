@@ -44,6 +44,7 @@
                     v-model="lot.production_date"
                     variant="underlined"
                     label="Production date *"
+                    type="date"
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12" md="6">
@@ -80,7 +81,7 @@
                 <v-btn
                   color="blue-darken-1"
                   variant="text"
-                  @click="add_lot_dialog = false"
+                  @click="closeModal"
                 >
                   Close
                 </v-btn>
@@ -105,11 +106,13 @@
 import axios from "axios";
 import config from "@/config";
 import requestModal from "./requestModal.vue";
+// import DateField from '@/components/DateField.vue'
 
 export default {
   name: "addLot",
   components: {
     requestModal,
+    // DateField,
   },
   data: () => ({
     formValid: false,
@@ -149,16 +152,21 @@ export default {
       this.editing = true;
       this.lot = { ...item };
       this.add_lot_dialog = true;
-      // this.$refs.loadingModal.open();
+    },
+    closeModal() {
+      this.add_lot_dialog = false;
+      this.editing = false;
     },
     async addLot() {
       const { editing } = this;
-      this.lot.wms_code = this.lot.lot_no;
-      this.lot.order_no = this.lot.lot_no;
+      this.lot.wms_code = Math.random().toString(36).substring(2, 15);
+      this.lot.order_no = Math.random().toString(36).substring(2, 15);
 
       // const url = 'http://127.0.0.1:${this.url_port}';
       const url = `${this.url}:${this.url_port}`;
       const end_point = editing ? "/edit_lot" : "/add_lot";
+
+      this.$refs.loadingModal.open();
 
       axios
         .post(`${url + end_point}`, this.lot, {

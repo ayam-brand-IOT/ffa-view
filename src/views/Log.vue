@@ -4,11 +4,11 @@
       <v-col cols="10">
         <div class="d-flex mb-5">
           <!-- back button -->
-          <v-btn to="/analyse-lot" size="x-large" variant="plain">
+          <v-btn @click="goBack" size="x-large" variant="plain">
             <v-icon>mdi-arrow-left</v-icon> Back
           </v-btn>
 
-          <!-- <h1>History</h1> -->
+          <!-- <h1>Log</h1> -->
         </div>
         <div v-if="analyzing_lot" class="d-flex align-baseline">
           <div class="mb-3 ml-4">
@@ -58,7 +58,7 @@
 
         </div>
         <v-tabs v-model="tab" background-color="transparent">
-          <v-tab value="1">History</v-tab>
+          <v-tab value="1">Log</v-tab>
           <v-tab value="2">Extra Images</v-tab>
           <v-tab value="3">Belly Resistence Test</v-tab>
         </v-tabs>
@@ -120,7 +120,7 @@ import requestModal from "@/components/requestModal.vue";
 import BrokenBellyList from "@/components/BrokenBellyList.vue";
 
 export default {
-  name: "History",
+  name: "Log",
   data: () => ({
     muestras: [],
     page: 1,
@@ -159,6 +159,15 @@ export default {
     url: () => config.url(),
   },
   methods: {
+    goBack() {
+      // Check if we came from lot-info
+      if (this.$route.query.from === 'lot-info') {
+        this.$router.push('/config/lot-info');
+      } else {
+        // Default back to analyse-lot
+        this.$router.push('/analyse-lot');
+      }
+    },
     chooseLot() {
       this.$refs.selectLotModal.open_select = true;
     },

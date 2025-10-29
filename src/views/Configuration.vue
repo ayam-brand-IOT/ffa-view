@@ -140,6 +140,33 @@
             </v-list>
           </v-card-text>
         </v-card>
+
+        <h3 class="mt-10 mb-3">
+          <v-icon class="mr-2">mdi-fish</v-icon>
+          Fish Parameters
+        </h3>
+        <v-card elevation="2">
+          <v-card-text>
+            <v-list>
+              <v-list-item>
+                <v-list-item-title>Fish Species Configuration</v-list-item-title>
+                <v-list-item-subtitle>
+                  Configure tail trigger and species-specific parameters
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <v-btn
+                    to="/config/fish-parameters"
+                    color="primary"
+                    class="buttons"
+                  >
+                    <v-icon class="mr-1">mdi-tune</v-icon>
+                    Configure
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
   </v-container>

@@ -64,6 +64,9 @@ export default {
         this.showShortcuts = !this.showShortcuts;
       }
     },
+    open() {
+      this.showShortcuts = true;
+    },
   },
 };
 </script>
