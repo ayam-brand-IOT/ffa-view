@@ -21,15 +21,27 @@
           {{ item[row] }}
         </td>
         <td >
-          <v-btn v-if="editable" class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
+          <!-- Show both buttons when showBothActions is true -->
+          <div v-if="showBothActions" class="d-flex gap-1">
+            <v-btn class="edit-button" icon color="green" @click="analyseLot(item)" title="Analyse Lot">
+              <v-icon>mdi-chevron-right</v-icon>
+            </v-btn>
+            <v-btn class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
+              <v-icon>mdi-format-list-bulleted-square</v-icon>
+            </v-btn>
+          </div>
+          
+          <!-- Original single button logic -->
+          <v-btn v-else-if="editable" class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
             <v-icon>mdi-format-list-bulleted-square</v-icon>
           </v-btn>
           <v-btn
-            v-if="selectable"
+            v-else-if="selectable"
             class="edit-button"
             icon
             color="green"
             @click="analyseLot(item)"
+            title="Analyse Lot"
           >
             <v-icon>mdi-chevron-right</v-icon>
           </v-btn>
@@ -125,6 +137,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    showBothActions: {
+      type: Boolean,
+      default: false,
+    },
     searchQuery: {
       type: String,
       default: "",
@@ -185,5 +201,8 @@ export default {
 }
 .selected-item {
   background-color: #e0e0e0;
+}
+.gap-1 {
+  gap: 4px;
 }
 </style>

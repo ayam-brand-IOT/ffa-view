@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import LengthCalibration from "../views/LengthCalib.vue";
 import ZOICalib from "../views/ZOICalib.vue";
 import LotInfo from "../views/LotInfo.vue";
-import ExportLot from "../views/ExportLot.vue"
+import ExportLot from "../views/ExportLot.vue";
 import HomeView from "../views/HomeView.vue";
 import LoadCell from "../views/LoadCell.vue";
 import Config from "../views/Configuration.vue";
@@ -12,9 +12,11 @@ import FishParameters from "../views/FishParameters.vue";
 
 const routes = [
   {
+    // UserPosts will be rendered inside User's <router-view>
+    // when /user/:id/posts is matched
     path: "/",
-    name: "Select Lot",
-    component: SelectLot,
+    name: "Lots Information",
+    component: LotInfo,
   },
   {
     path: "/analyse-lot",
@@ -27,8 +29,7 @@ const routes = [
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "log" */ "../views/Log.vue"),
+    component: () => import(/* webpackChunkName: "log" */ "../views/Log.vue"),
   },
   {
     path: "/broken-belly-test",
@@ -37,7 +38,9 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-      import(/* webpackChunkName: "brokenBellyTest" */ "../views/BrokenBellyTest.vue"),
+      import(
+        /* webpackChunkName: "brokenBellyTest" */ "../views/BrokenBellyTest.vue"
+      ),
   },
   {
     path: "/muestra/:id",
@@ -85,13 +88,13 @@ const routes = [
         name: "ZOI Calibration",
         component: ZOICalib,
       },
-      {
-        // UserPosts will be rendered inside User's <router-view>
-        // when /user/:id/posts is matched
-        path: "lot-info",
-        name: "Lots Information",
-        component: LotInfo,
-      },
+      // {
+      //   // UserPosts will be rendered inside User's <router-view>
+      //   // when /user/:id/posts is matched
+      //   path: "lot-info",
+      //   name: "Lots Information",
+      //   component: LotInfo,
+      // },
       {
         // UserPosts will be rendered inside User's <router-view>
         // when /user/:id/posts is matched

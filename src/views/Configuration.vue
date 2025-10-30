@@ -5,7 +5,7 @@
     </div> -->
     <v-row style="height: 100%" justify="center">
       <v-col cols="10">
-        <h3 class=" mb-3">
+        <h3 class="mb-3">
           <v-icon class="mr-2">mdi-package-variant-closed</v-icon>
           Lots Information
         </h3>
@@ -19,7 +19,7 @@
                   Edit, add or delete lots to analyze
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
-                  <v-btn to="/config/lot-info" color="primary" class="buttons">
+                  <v-btn to="/" color="primary" class="buttons">
                     <v-icon class="mr-1">mdi-view-list</v-icon>
                     Manage
                   </v-btn>
@@ -98,11 +98,11 @@
           </v-card-text>
         </v-card>
 
-        <h3 class="mt-10 mb-3" >
+        <h3 class="mt-10 mb-3">
           <v-icon class="mr-2">mdi-eye</v-icon>
           Vision parameters
         </h3>
-        <v-card elevation="2" >
+        <v-card elevation="2">
           <v-card-text>
             <v-list>
               <v-list-item>
@@ -116,7 +116,7 @@
                     color="primary"
                     class="buttons"
                   >
-                  <v-icon class="mr-1">mdi-vector-square</v-icon>
+                    <v-icon class="mr-1">mdi-vector-square</v-icon>
                     Manage
                   </v-btn>
                 </v-list-item-action>
@@ -132,7 +132,7 @@
                     color="primary"
                     class="buttons"
                   >
-                  <v-icon class="mr-1">mdi-ruler</v-icon>
+                    <v-icon class="mr-1">mdi-ruler</v-icon>
                     Manage
                   </v-btn>
                 </v-list-item-action>
@@ -149,7 +149,9 @@
           <v-card-text>
             <v-list>
               <v-list-item>
-                <v-list-item-title>Fish Species Configuration</v-list-item-title>
+                <v-list-item-title
+                  >Fish Species Configuration</v-list-item-title
+                >
                 <v-list-item-subtitle>
                   Configure tail trigger and species-specific parameters
                 </v-list-item-subtitle>

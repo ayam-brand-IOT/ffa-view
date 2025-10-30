@@ -162,7 +162,7 @@ export default {
     goBack() {
       // Check if we came from lot-info
       if (this.$route.query.from === 'lot-info') {
-        this.$router.push('/config/lot-info');
+        this.$router.push('/');
       } else {
         // Default back to analyse-lot
         this.$router.push('/analyse-lot');

@@ -6,13 +6,11 @@
           {{ this.$route.name }}
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn text to="/"> <v-icon>mdi-microscope</v-icon> Analysis</v-btn>
+        <v-btn text to="/">  <v-icon class="mr-2">mdi-package-variant-closed</v-icon>
+          Lot Info</v-btn>
         <v-btn text to="/config"> <v-icon>mdi-cog</v-icon> Configuration</v-btn>
 
-        <v-btn text to="/config/lot-info">
-          <v-icon class="mr-2">mdi-package-variant-closed</v-icon>
-          Lot Info
-        </v-btn>
+
         <!-- <v-btn text to="/vision">Vision</v-btn>
         <v-btn text to="/loadcell">LoadCell</v-btn> -->
       </v-app-bar>

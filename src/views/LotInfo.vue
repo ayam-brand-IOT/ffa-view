@@ -2,13 +2,7 @@
   <v-container style="height: 100%">
     <v-row style="height: 100%" justify="center">
       <v-col cols="10">
-        <div class="d-flex mb-5">
-          <!-- back button -->
-          <router-link to="/config" size="x-large" variant="plain">
-            <v-icon>mdi-arrow-left</v-icon> Back
-          </router-link>
-          <!-- <h1>History</h1> -->
-        </div>
+
         <v-card elevation="2">
           <v-card-text>
             <v-list>
@@ -24,7 +18,7 @@
               </v-list-item>
             </v-list>
             <v-divider></v-divider>
-            <p class="mt-4">List of lots - Click the log icon to view lot details</p>
+            <p class="mt-4">List of lots - Use the green arrow to analyse or the blue list icon to view log</p>
             
             <!-- Search Field -->
             <div class="d-flex align-center mb-4">
@@ -43,7 +37,13 @@
 
             </div>
             
-            <lot-list ref="lots" editable :search-query="searchQuery" v-on:editLot="selectedLot"/>
+            <lot-list 
+              ref="lots" 
+              :show-both-actions="true"
+              :search-query="searchQuery" 
+              @editLot="selectedLot"
+              @rowClicked="analyseLot"
+            />
           </v-card-text>
         </v-card>
       </v-col>
@@ -96,7 +96,7 @@ export default {
       };
     },
     ...mapState({
-      // config: state => state.config
+      socket_instance: state => state.socket_instance
     }),
     ...mapGetters({
       // config: 'config'
@@ -124,6 +124,24 @@ export default {
         name: "Log", 
         query: { from: 'lot-info' } 
       });
+    },
+    analyseLot(item) {
+      // Set the selected lot in the store
+      this.$store.dispatch("setAnalyzingLot", item);
+      
+      // Set fish species and type for analysis
+      const fish_species = item?.fish_species;
+      const type = item?.type;
+
+      console.warn("Vision values", fish_species, type);
+
+      // Emit fish data to socket if available
+      if (this.$store.state.socket_instance) {
+        this.$store.state.socket_instance.emit("set_fish_data", { fish_species, type });
+      }
+      
+      // Navigate to analyse lot page
+      this.$router.push({ name: "Analyse Lot" });
     },
   },
   mounted() {
