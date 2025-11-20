@@ -3,10 +3,22 @@
     <!-- <div>
       <h1>Configuration</h1>
     </div> -->
+
     <div class="d-flex align-baseline">
       <h4 class="mb-3 ml-4">Last sample #:</h4>
       <span class="ml-1">{{ last_analysed_id }}</span>
+
+      <v-spacer />
+
+      <v-chip :color="stateColor" label class="mr-4">
+        {{ stateLabel }}
+      </v-chip>
     </div>
+
+    <p class="ml-4 mb-4">
+      {{ statusMessage }}
+    </p>
+
     <v-row style="height: 100%" justify="center">
       <v-col cols="10">
         <v-row>
@@ -78,6 +90,14 @@ import commandList from "@/components/commandList.vue";
 import requestModal from "@/components/requestModal.vue";
 import pushNotification from "@/components/pushNotification.vue";
 
+// --- Parámetros de comportamiento (ajústalos en pruebas reales) ---
+const SAMPLE_INTERVAL_MS = 50; // cada cuánto pedimos tensión
+const AUTO_START_THRESHOLD = 30; // g por encima de la línea base para considerar que ya se está jalando
+const AUTO_START_SAMPLES = 6; // 6 samples * 50ms = ~300 ms de subida sostenida
+const BREAK_DROP_DELTA = 20; // caída respecto al máximo para decir que "se rompió"
+const BREAK_DESC_SAMPLES = 4; // cuántos samples bajando después del pico
+const MAX_TEST_MS = 10000; // timeout de seguridad de la prueba (10s)
+
 export default {
   name: "BrokenBellyTest",
   components: {
@@ -94,11 +114,39 @@ export default {
     getCommands() {
       return this.actions;
     },
+    stateLabel() {
+      switch (this.state) {
+        case "idle":
+          return "Esperando";
+        case "arming":
+          return "Detectando tensión";
+        case "running":
+          return "Prueba en curso";
+        case "finished":
+          return "Prueba terminada";
+        default:
+          return this.state;
+      }
+    },
+    stateColor() {
+      switch (this.state) {
+        case "idle":
+          return "grey";
+        case "arming":
+          return "blue";
+        case "running":
+          return "orange";
+        case "finished":
+          return "green";
+        default:
+          return "grey";
+      }
+    },
   },
   data: () => ({
     force_data: [],
     time_data: [],
-    initial_tension: 0,
+    baseline_tension: null,
     start_time: 0,
     duration: 0,
     break_point: 0,
@@ -106,6 +154,20 @@ export default {
     data: [],
     testIsRunning: false,
     optionsAvailable: false,
+
+    // nuevo
+    monitorInterval: null,
+    testTimeout: null,
+    state: "idle", // idle | arming | running | finished
+    statusMessage: "Esperando que cuelgues el pescado y empieces a jalar...",
+    autoMode: true,
+
+    current_tension: 0,
+    max_tension: 0,
+    risingSamples: 0,
+    descendingSamples: 0,
+    last_tension: 0,
+
     actions: {
       " ": { name: "START", description: "Start test", shortcut: "space" },
       h: { name: "HOME", description: "Go to home", shortcut: "h" },
@@ -113,6 +175,7 @@ export default {
       c: { name: "CLEAR", description: "Reset test", shortcut: "c" },
       t: { name: "TARE", description: "Tare", shortcut: "t" },
     },
+    lastChartUpdate: 0,
   }),
   methods: {
     evokeAction(action) {
@@ -146,7 +209,6 @@ export default {
           this.notify("Test is running, Stop it to run the command", "warning");
           return;
         }
-        console.warn("action", index);
         this.evokeAction(index);
       }
     },
@@ -158,6 +220,8 @@ export default {
     setTare() {
       this.notify("Tare command sent", "success");
       this.socket_instance.emit("set_tare", true);
+      // reseteamos baseline para recalcular con nuevos valores
+      this.baseline_tension = null;
     },
 
     updateTension() {
@@ -165,28 +229,52 @@ export default {
       socket_instance.emit("get_tension", "");
     },
 
-    run_test() {
-      const { testIsRunning } = this;
+    // monitor siempre activo
+    startMonitoring() {
+      if (this.monitorInterval) clearInterval(this.monitorInterval);
+      this.monitorInterval = setInterval(
+        this.updateTension,
+        SAMPLE_INTERVAL_MS
+      );
+    },
 
-      if (testIsRunning) this.stopTest();
-      else this.startTest();
+    run_test() {
+      // botón Start/Stop: inicio manual o parada manual
+      if (this.testIsRunning) this.stopTest("manual-stop");
+      else this.startTest("manual");
     },
 
     notify(text, type, time) {
       this.$refs.notification.push(text, type, time);
     },
 
-    startTest() {
-      this.notify("Test started", "info");
+    startTest(origin = "manual") {
+      if (this.testIsRunning) return;
 
       this.resetValues();
       this.testIsRunning = true;
-      this.interval = setInterval(this.updateTension, 50);
+      this.state = "running";
+      this.optionsAvailable = false;
 
+      this.statusMessage =
+        origin === "auto"
+          ? "Prueba iniciada automáticamente, sigue jalando hasta que se rompa."
+          : "Prueba iniciada, sigue jalando hasta que se rompa.";
+
+      this.notify(
+        origin === "auto" ? "Test started (auto)" : "Test started",
+        "info"
+      );
+
+      this.start_time = new Date().getTime();
+      this.max_tension = this.current_tension || 0;
+      this.descendingSamples = 0;
+
+      if (this.testTimeout) clearTimeout(this.testTimeout);
       this.testTimeout = setTimeout(() => {
-        this.notify("Test finished: timeout", "error", 1000);
-        this.testFinished();
-      }, 10000);
+        if (!this.testIsRunning) return;
+        this.testFinished("timeout");
+      }, MAX_TEST_MS);
     },
 
     resetValues() {
@@ -194,52 +282,92 @@ export default {
       this.break_point = 0;
       this.time_data = [];
       this.force_data = [];
+      this.max_tension = 0;
+      this.risingSamples = 0;
+      this.descendingSamples = 0;
     },
 
     resetTest() {
       this.optionsAvailable = false;
+      this.state = "idle";
+      this.statusMessage =
+        "Esperando que cuelgues el pescado y empieces a jalar...";
 
       this.resetValues();
       this.updateChart();
     },
 
-    stopTest() {
-      // const { socket_instance } = this;
-
-      // socket_instance.emit("enter_to_weight_mode", "");
-
+    stopTest(reason = "stopped") {
       if (this.interval) clearInterval(this.interval);
-      if (this.testTimeout) clearTimeout(this.testTimeout);
+      if (this.testTimeout) {
+        clearTimeout(this.testTimeout);
+        this.testTimeout = null;
+      }
+
+      this.testIsRunning = false;
+      this.state = "idle";
+      this.statusMessage =
+        reason === "manual-stop"
+          ? "Prueba detenida. Puedes volver a intentarlo."
+          : "Prueba detenida.";
 
       this.resetValues();
-      this.testIsRunning = false;
+      this.updateChart();
     },
 
     updateChart() {
-      this.data = this.force_data;
-      this.labels = this.time_data;
+      const now = performance.now();
 
-      this.$refs.ntm.update();
+      // no actualices más de 1 vez cada 100ms
+      if (now - this.lastChartUpdate < 100) return;
+      this.lastChartUpdate = now;
+
+      // clonar arrays para evitar efectos raros de referencia
+      this.data = [...this.force_data];
+      this.labels = [...this.time_data];
+
+      this.$nextTick(() => {
+        if (this.$refs.ntm && typeof this.$refs.ntm.update === "function") {
+          this.$refs.ntm.update();
+        }
+      });
     },
 
-    testFinished() {
-      const { socket_instance, force_data, start_time } = this;
+    testFinished(reason = "tension drop") {
+      if (!this.testIsRunning) return;
 
-      // socket_instance.emit("enter_to_weight_mode", "");
-      if (this.interval) clearInterval(this.interval);
-      if (this.testTimeout) clearTimeout(this.testTimeout);
+      if (this.testTimeout) {
+        clearTimeout(this.testTimeout);
+        this.testTimeout = null;
+      }
 
       this.testIsRunning = false;
-
+      this.state = "finished";
       this.optionsAvailable = true;
-      this.break_point = Math.max(...force_data);
-      this.duration = new Date().getTime() - start_time;
+
+      this.break_point =
+        this.max_tension ||
+        (this.force_data.length ? Math.max(...this.force_data) : 0);
+      this.duration = new Date().getTime() - this.start_time;
 
       this.updateChart();
 
+      let type =
+        reason === "timeout"
+          ? "warning"
+          : reason === "tension drop"
+          ? "success"
+          : "info";
+
+      this.statusMessage = `Prueba terminada (${reason}). Máxima tensión: ${this.break_point.toFixed(
+        0
+      )} g.`;
+
+      this.notify(this.statusMessage, type, 2000);
+
       console.warn("duration", this.duration);
       console.warn("break_point", this.break_point);
-      console.warn("force_data", force_data.length);
+      console.warn("force_data", this.force_data.length);
     },
 
     saveData() {
@@ -251,7 +379,6 @@ export default {
         lot_no: getAnalyzingLotNo,
         muestra_id: this.last_analysed_id,
       };
-      // const data = { break_point:666, lot_no: "Hugo" };
 
       this.$refs.loadingModal.open();
       axios
@@ -259,7 +386,7 @@ export default {
           headers: { Accept: "application/json" },
         })
         .then(
-          (response) => {
+          () => {
             this.$refs.loadingModal.success();
             this.resetTest();
           },
@@ -277,41 +404,91 @@ export default {
     window.addEventListener("keyup", this.keyboardCatch);
     this.socket_instance.emit("set_tare", true);
 
-    socket_instance.on("tension_update", (tension) => {
-      const tolerance = 10;
-      const { initial_tension, force_data, testIsRunning } = this;
+    this.statusMessage =
+      "Esperando que cuelgues el pescado y empieces a jalar...";
+    this.startMonitoring(); // <<--- aquí empieza a leer SIEMPRE
 
-      if (this.force_data.length == 0 && testIsRunning) {
-        this.testIsRunning = true;
-        this.optionsAvailable = false;
-        this.initial_tension = tension;
-        // Stating a timer from the first tension update
-        this.start_time = new Date().getTime();
+    socket_instance.on("tension_update", (tension) => {
+      this.current_tension = tension;
+
+      // baseline al principio o después de tare
+      if (this.baseline_tension === null) {
+        this.baseline_tension = tension;
       }
 
-      console.log({ tension, initial_tension });
+      const deltaFromBaseline = tension - this.baseline_tension;
+      const isAboveThreshold = deltaFromBaseline > AUTO_START_THRESHOLD;
 
-      this.force_data.push(tension);
-      this.time_data.push(new Date().getTime() - this.start_time);
+      // --- AUTO-START: subida sostenida ---
+      if (this.autoMode && !this.testIsRunning && this.state !== "finished") {
+        if (isAboveThreshold) {
+          this.risingSamples++;
 
-      const between_tolerance =
-        Math.abs(tension - initial_tension) <= tolerance;
-      const is_smaller_than_before =
-        force_data[force_data.length - 2] > force_data[force_data.length - 1];
+          if (this.state !== "arming") {
+            this.state = "arming";
+            this.statusMessage = "Detectando tensión, no sueltes...";
+          }
 
-      if (force_data.length > 2) {
-        if (between_tolerance && is_smaller_than_before) {
-          this.notify("Test finished: tension drop", "success", 1000);
-          this.testFinished();
+          if (this.risingSamples >= AUTO_START_SAMPLES) {
+            this.startTest("auto");
+          }
+        } else {
+          this.risingSamples = 0;
+          if (this.state === "arming") {
+            this.state = "idle";
+            this.statusMessage =
+              "Esperando que cuelgues el pescado y empieces a jalar...";
+          }
         }
       }
+
+      // --- Si la prueba está corriendo, guardamos los datos y buscamos ruptura ---
+      if (this.testIsRunning) {
+        if (this.force_data.length === 0) {
+          this.start_time = new Date().getTime();
+        }
+
+        this.force_data.push(tension);
+        this.time_data.push(new Date().getTime() - this.start_time);
+
+        // actualizar máximo
+        if (tension > this.max_tension) {
+          this.max_tension = tension;
+          this.descendingSamples = 0;
+        } else {
+          // bajando
+          if (tension < this.last_tension - 2) {
+            this.descendingSamples++;
+          } else {
+            this.descendingSamples = 0;
+          }
+        }
+
+        const hasDroppedEnough = this.max_tension - tension >= BREAK_DROP_DELTA;
+
+        if (
+          this.force_data.length > 5 &&
+          hasDroppedEnough &&
+          this.descendingSamples >= BREAK_DESC_SAMPLES
+        ) {
+          this.testFinished("tension drop");
+        }
+
+        // chart en vivo (si te da lag, se puede bajar la frecuencia)
+        this.updateChart();
+      }
+
+      this.last_tension = tension;
     });
   },
 
   beforeUnmount() {
     window.removeEventListener("keyup", this.keyboardCatch);
     this.socket_instance.off("tension_update");
+    if (this.monitorInterval) clearInterval(this.monitorInterval);
+    if (this.testTimeout) clearTimeout(this.testTimeout);
   },
 };
 </script>
+
 <style lang="scss" scoped></style>
