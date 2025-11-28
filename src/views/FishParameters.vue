@@ -20,31 +20,8 @@
             <!-- Form Section -->
             <v-form ref="form" v-model="valid" @submit.prevent="updateConfig">
               <v-row>
-                <!-- Tail Trigger Section -->
-                <v-col cols="12" md="6">
-                  <v-card outlined>
-                    <v-card-title class="subtitle-1">
-                      <v-icon left color="secondary">mdi-target</v-icon>
-                      Tail Trigger Configuration
-                    </v-card-title>
-                    <v-card-text>
-                      <v-text-field
-                        v-model.number="formData.tailTrigger"
-                        label="Tail Trigger"
-                        type="number"
-                        :rules="[rules.required, rules.positive]"
-                        outlined
-                        dense
-                        suffix="units"
-                        hint="Current tail trigger value"
-                        persistent-hint
-                      ></v-text-field>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-
                 <!-- Species Configuration Section -->
-                <v-col cols="12" md="6">
+                <v-col cols="12" md="12">
                   <v-card outlined>
                     <v-card-title class="subtitle-1">
                       <v-icon left color="secondary">mdi-fishbowl</v-icon>
@@ -128,12 +105,6 @@
                     </v-card-title>
                     <v-card-text>
                       <v-row>
-                        <v-col cols="12" md="6">
-                          <v-chip color="primary" outlined>
-                            <v-icon left>mdi-target</v-icon>
-                            Tail Trigger: {{ originalConfig.tailTrigger || 'Not set' }}
-                          </v-chip>
-                        </v-col>
                         <v-col cols="12" md="6" v-if="selectedSpecies && selectedType">
                           <v-chip color="secondary" outlined>
                             <v-icon left>mdi-fish</v-icon>
@@ -256,11 +227,6 @@ export default {
       modalMessage: '',
       updateResult: null,
       
-      // Form data
-      formData: {
-        tailTrigger: null
-      },
-      
       // Original configuration
       originalConfig: {},
       
@@ -311,9 +277,6 @@ export default {
         this.originalConfig = response.data
 
         console.log('Loaded configuration:', this.originalConfig)
-        
-        // Set form data
-        this.formData.tailTrigger = this.originalConfig.tailTrigger
         
         // Set species options
         this.speciesOptions = this.originalConfig.species_params || []
@@ -377,11 +340,6 @@ export default {
       try {
         const updateData = {}
         
-        // Add tail trigger if changed
-        if (this.formData.tailTrigger !== this.originalConfig.tailTrigger) {
-          updateData.tailTrigger = this.formData.tailTrigger
-        }
-        
         // Add species parameters if selected and changed
         if (this.selectedSpecies && this.selectedType && this.currentParameters) {
           // Check if parameters changed
@@ -443,8 +401,6 @@ export default {
     
     resetForm() {
       // Reset to original values
-      this.formData.tailTrigger = this.originalConfig.tailTrigger
-      
       if (this.originalParameters) {
         this.currentParameters = {}
         Object.keys(this.originalParameters).forEach(key => {
