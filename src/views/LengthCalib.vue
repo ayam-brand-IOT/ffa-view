@@ -36,7 +36,7 @@
                   <strong> <v-icon>mdi-keyboard-return</v-icon> Enter</strong>
                 </li>
                 <li>
-                  Enter the actual distance in <strong>centimeters</strong> and
+                  Enter the actual distance in <strong>millimeters</strong> and
                   click <strong>Calibrate</strong>.
                 </li>
               </ol>
