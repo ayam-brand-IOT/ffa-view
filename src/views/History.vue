@@ -115,7 +115,6 @@ import config from "../config";
 import LotImages from "./LotImages.vue";
 import { mapState, mapGetters } from "vuex";
 import selectLot from "@/components/selectLot.vue";
-import { VDataTable } from "vuetify/labs/VDataTable";
 import requestModal from "@/components/requestModal.vue";
 import BrokenBellyList from "@/components/BrokenBellyList.vue";
 
@@ -147,7 +146,6 @@ export default {
   components: {
     LotImages,
     selectLot,
-    VDataTable,
     requestModal,
     BrokenBellyList,
   },
