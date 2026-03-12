@@ -20,6 +20,10 @@
         <v-icon>mdi-arrow-expand-horizontal</v-icon>
         BRT
       </v-btn>
+      <v-btn class="ml-3" @click="captureGutsWeight" color="primary">
+        <v-icon>mdi-weight</v-icon>
+        Capture Guts Weight
+      </v-btn>
     </div>
     <v-row style="flex: 1">
       <v-col style="border-right: solid 1px lightgray" cols="6">
@@ -135,6 +139,43 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog
+      v-model="gutsWeightDialog"
+      transition="dialog-bottom-transition"
+      max-width="500"
+    >
+      <v-card>
+        <v-card-title class="text-h5 bg-primary">
+          <v-icon class="mr-2">mdi-weight</v-icon>
+          Guts Weight Captured
+        </v-card-title>
+        <v-card-text class="pa-6">
+          <div class="text-center">
+            <h2 class="mb-2">Captured Weight:</h2>
+            <h1 class="text-primary">
+              {{ capturedGutsWeight }} g
+            </h1>
+          </div>
+          <v-text-field
+            v-model="capturedGutsWeight"
+            label="Adjust weight if needed"
+            type="number"
+            suffix="g"
+            variant="outlined"
+            class="mt-4"
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions class="justify-end pa-4">
+          <v-btn color="grey" variant="text" @click="cancelGutsWeight">
+            Cancel
+          </v-btn>
+          <v-btn color="success" variant="elevated" @click="confirmGutsWeight">
+            Confirm
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-btn
       style="  position: absolute;bottom: 55px;right: 15px;"
       color="primary"
@@ -189,6 +230,8 @@ export default {
     analysis_data: null,
     laser_state: false,
     extraImage: null,
+    gutsWeightDialog: false,
+    capturedGutsWeight: 0,
   }),
   computed: {
     ...mapState(["socket_instance", "last_analysed_id"]),
@@ -466,6 +509,30 @@ export default {
       // this.putData("capture", {});
       // this.capture_state = !this.capture_state;
       // this.resetLive();
+    },
+
+    captureGutsWeight() {
+      this.capturedGutsWeight = this.live.weight;
+      this.gutsWeightDialog = true;
+      this.notify("Guts weight captured", "info");
+    },
+
+    cancelGutsWeight() {
+      this.gutsWeightDialog = false;
+      this.capturedGutsWeight = 0;
+    },
+
+    confirmGutsWeight() {
+      // Aquí puedes agregar la lógica para guardar el peso
+      // Por ejemplo, enviarlo al servidor o agregarlo al análisis
+      console.log("Guts weight confirmed:", this.capturedGutsWeight);
+      this.notify(`Guts weight saved: ${this.capturedGutsWeight}g`, "success");
+      
+      // TODO: Agregar lógica para guardar el peso de las vísceras
+      // Ejemplo: this.socket_instance.emit('save_guts_weight', { weight: this.capturedGutsWeight });
+      
+      this.gutsWeightDialog = false;
+      this.capturedGutsWeight = 0;
     },
 
     handleHasBeenDebounced() {
