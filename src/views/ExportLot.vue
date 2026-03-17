@@ -21,21 +21,12 @@
               </v-list-item>
             </v-list>
             <v-divider></v-divider>
-            <p class="mt-4">Select the Lot# that you want to export its data</p>
-            <lot-list ref="lots" selectable @rowClicked="selectedItem" />
+            <p class="mt-4">Click on the download icon to export the lot data to Excel</p>
+            <lot-list ref="lots" downloadable @downloadLot="exportData" />
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
-    <v-btn
-      @click="exportData()"
-      :disabled="!selected_item"
-      color="primary"
-      class="download-button"
-    >
-      <v-icon>mdi-file-excel</v-icon>
-      Export
-    </v-btn>
     <requestModal ref="loadingModal" />
   </v-container>
 </template>
@@ -52,22 +43,18 @@ export default {
     requestModal,
   },
   data: () => ({
-    selected_item: null,
+    // removed selected_item since it's no longer needed
   }),
   computed: {
     url_port: () => config.url_port(),
     url: () => config.url(),
   },
   methods: {
-    selectedItem(item) {
-      this.selected_item = item;
-    },
-    async exportData() {
+    async exportData(item) {
       this.$refs.loadingModal.open();
 
       const url = `${this.url}:${this.url_port}`;
-      const end_point = `/download-lot-samples/${this.selected_item.lot_no}`;
-      //192.168.1.62:3002/download-lot-samples/Hugo
+      const end_point = `/download-lot-samples/${item.lot_no}`;
 
       axios({
         url: `${url + end_point}`,
@@ -80,7 +67,7 @@ export default {
           const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement("a");
           link.href = url;
-          link.setAttribute("download", `lot_${this.selected_item.lot_no}.xlsx`);
+          link.setAttribute("download", `lot_${item.lot_no}.xlsx`);
           document.body.appendChild(link);
           link.click();
         },
@@ -93,10 +80,3 @@ export default {
   },
 };
 </script>
-<style lang="scss" scoped>
-.download-button {
-  position: fixed;
-  bottom: 60px;
-  right: 20px;
-}
-</style>

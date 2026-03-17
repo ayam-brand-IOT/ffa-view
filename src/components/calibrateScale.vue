@@ -84,7 +84,7 @@ export default {
     calibration_steps: () => [
       { message: "Click next to start calibration", icon: "mdi-weight-gram" },
       { message: "Place the empty container on the scale and press OK", icon: "mdi-weight-gram" },
-      { message: "Place the container with the weight on the scale and press OK", icon: "mdi-weight-gram" },
+      { message: "Place the container with 1kg on the scale and press OK", icon: "mdi-weight-gram" },
       { message: "Calibration complete", icon: "mdi-check" },
     ],
   },

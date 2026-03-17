@@ -48,6 +48,14 @@
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12" md="6">
+                  <v-text-field
+                    :rules="[required]"
+                    v-model="lot.order_no"
+                    variant="underlined"
+                    label="Order No*"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" md="6">
                   <v-select
                     :rules="[required]"
                     v-model="lot.fish_species"
@@ -74,6 +82,15 @@
                     label="Size*"
                   ></v-select>
                 </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    :rules="[required]"
+                    v-model="lot.wms_code"
+                    variant="underlined"
+                    label="WMS Code*"
+                  ></v-text-field>
+                </v-col>
+                
               </v-row>
               <small>*indicates required field</small>
               <v-card-actions>
@@ -125,8 +142,8 @@ export default {
       fish_species: null,
       type: null,
       size: null,
-      order_no: "a",
-      wms_code: "a",
+      order_no: null,
+      wms_code: null,
     },
   }),
   computed: {
@@ -142,8 +159,8 @@ export default {
       fish_species: null,
       type: null,
       size: null,
-      order_no: "a",
-      wms_code: "a",
+      order_no: null,
+      wms_code: null,
     }),
   },
   methods: {
@@ -159,8 +176,6 @@ export default {
     },
     async addLot() {
       const { editing } = this;
-      this.lot.wms_code = Math.random().toString(36).substring(2, 15);
-      this.lot.order_no = Math.random().toString(36).substring(2, 15);
 
       // const url = 'http://127.0.0.1:${this.url_port}';
       const url = `${this.url}:${this.url_port}`;

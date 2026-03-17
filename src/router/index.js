@@ -12,8 +12,6 @@ import FishParameters from "../views/FishParameters.vue";
 
 const routes = [
   {
-    // UserPosts will be rendered inside User's <router-view>
-    // when /user/:id/posts is matched
     path: "/",
     name: "Lots Information",
     component: LotInfo,

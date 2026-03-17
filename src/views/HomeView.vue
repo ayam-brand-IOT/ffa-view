@@ -114,67 +114,18 @@
       </v-btn>
     </div>
 
-    <v-dialog
-      persistent
+    <save-dialog
       v-model="saveDialog"
-      transition="dialog-bottom-transition"
-      width="auto"
-    >
-      <v-card>
-        <div class="px-5 pt-4 text-h6">Alert</div>
-        <v-card-text>
-          <div class="pb-3 pt-2 text-body-2">
-            You're leaving without <b>save</b>,<br />
-            Would you like to save the last test?
-          </div>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn color="red" variant="text" @click="continueRoute()">
-            No
-          </v-btn>
-          <v-btn color="success" variant="text" @click="continueRoute(true)">
-            Yes
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+      @confirm="continueRoute(true)"
+      @cancel="continueRoute()"
+    />
 
-    <v-dialog
+    <guts-weight-dialog
       v-model="gutsWeightDialog"
-      transition="dialog-bottom-transition"
-      max-width="500"
-    >
-      <v-card>
-        <v-card-title class="text-h5 bg-primary">
-          <v-icon class="mr-2">mdi-weight</v-icon>
-          Guts Weight Captured
-        </v-card-title>
-        <v-card-text class="pa-6">
-          <div class="text-center">
-            <h2 class="mb-2">Captured Weight:</h2>
-            <h1 class="text-primary">
-              {{ capturedGutsWeight }} g
-            </h1>
-          </div>
-          <v-text-field
-            v-model="capturedGutsWeight"
-            label="Adjust weight if needed"
-            type="number"
-            suffix="g"
-            variant="outlined"
-            class="mt-4"
-          ></v-text-field>
-        </v-card-text>
-        <v-card-actions class="justify-end pa-4">
-          <v-btn color="grey" variant="text" @click="cancelGutsWeight">
-            Cancel
-          </v-btn>
-          <v-btn color="success" variant="elevated" @click="confirmGutsWeight">
-            Confirm
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+      :weight="capturedGutsWeight"
+      @confirm="confirmGutsWeight"
+      @cancel="cancelGutsWeight"
+    />
 
     <v-btn
       style="  position: absolute;bottom: 55px;right: 15px;"
@@ -205,12 +156,16 @@ import { mapState, mapGetters } from "vuex";
 import commandList from "@/components/commandList.vue";
 import pushNotification from "@/components/pushNotification.vue";
 import PreviewExtraImage from "@/components/previewExtraImage.vue";
+import SaveDialog from "@/components/SaveDialog.vue";
+import GutsWeightDialog from "@/components/GutsWeightDialog.vue";
 
 export default {
   components: {
     notification: pushNotification,
     PreviewExtraImage,
     commandList,
+    SaveDialog,
+    GutsWeightDialog,
   },
   data: () => ({
     lot: null,
@@ -315,6 +270,13 @@ export default {
       const { defects, actions } = config;
       const { indicators } = this.live;
 
+      // Handle save dialog shortcuts
+      if (this.saveDialog) {
+        if (key === "y") { event.preventDefault(); this.continueRoute(true); }
+        if (key === "n") { event.preventDefault(); this.continueRoute(); }
+        return;
+      }
+
       //if in defects exist on key name with the key pressed
       if (defects.hasOwnProperty(key)) {
         event.preventDefault();
@@ -360,7 +322,7 @@ export default {
     finishLotAnalysis() {
       this.lot = null;
       this.$store.dispatch("setAnalyzingLot", null);
-      this.$router.push({ name: "Select Lot" });
+      this.$router.push({ path: "/" });
       // alert("Lot analysis finished");
     },
 
@@ -518,20 +480,16 @@ export default {
     },
 
     cancelGutsWeight() {
-      this.gutsWeightDialog = false;
       this.capturedGutsWeight = 0;
     },
 
-    confirmGutsWeight() {
-      // Aquí puedes agregar la lógica para guardar el peso
-      // Por ejemplo, enviarlo al servidor o agregarlo al análisis
-      console.log("Guts weight confirmed:", this.capturedGutsWeight);
-      this.notify(`Guts weight saved: ${this.capturedGutsWeight}g`, "success");
-      
-      // TODO: Agregar lógica para guardar el peso de las vísceras
-      // Ejemplo: this.socket_instance.emit('save_guts_weight', { weight: this.capturedGutsWeight });
-      
-      this.gutsWeightDialog = false;
+    confirmGutsWeight(weight) {
+      console.log("Guts weight confirmed:", weight);
+      this.notify(`Guts weight saved: ${weight}g`, "success");
+
+      // TODO: send to backend
+      // this.socket_instance.emit('save_guts_weight', { weight });
+
       this.capturedGutsWeight = 0;
     },
 

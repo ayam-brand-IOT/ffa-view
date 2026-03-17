@@ -9,7 +9,7 @@
         >
           {{ columns }}
         </th>
-        <th v-if="editable"></th>
+        <th v-if="editable || downloadable || selectable || showBothActions"></th>
       </tr>
     </thead>
     <tbody>
@@ -30,6 +30,11 @@
               <v-icon>mdi-format-list-bulleted-square</v-icon>
             </v-btn>
           </div>
+          
+          <!-- Downloadable button -->
+          <v-btn v-else-if="downloadable" class="edit-button" icon color="success" @click="downloadLot(item)" title="Download Excel">
+            <v-icon>mdi-file-excel</v-icon>
+          </v-btn>
           
           <!-- Original single button logic -->
           <v-btn v-else-if="editable" class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
@@ -137,6 +142,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    downloadable: {
+      type: Boolean,
+      default: false,
+    },
     showBothActions: {
       type: Boolean,
       default: false,
@@ -158,6 +167,9 @@ export default {
     },
     editLot(item) {
       this.$emit("editLot", item);
+    },
+    downloadLot(item) {
+      this.$emit("downloadLot", item);
     },
     getLots() {
       // const url = 'http://127.0.0.1:${this.url_port}';
