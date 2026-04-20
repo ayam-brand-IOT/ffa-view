@@ -75,7 +75,7 @@
                   >
                     <template v-slot:item.image="{ item }">
                       <v-img
-                        :src="`${url}:${url_port}/muestra_image/${item.columns.image}`"
+                        :src="`${url}:${url_port}/muestra_image/${item.image}`"
                         width="150"
                         height="150"
                         contain
@@ -84,7 +84,7 @@
                     </template>
                     <template v-slot:item.actions="{ item }">
                       <v-btn
-                        :to="`/muestra/${item.raw.id}`"
+                        :to="`/muestra/${item.id}`"
                         size="x-large"
                         variant="plain"
                       >
