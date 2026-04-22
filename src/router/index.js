@@ -41,6 +41,18 @@ const routes = [
       ),
   },
   {
+    path: "/guts-weight",
+    name: "Guts Weight",
+    component: () =>
+      import(/* webpackChunkName: "gutsWeight" */ "../views/GutsWeightView.vue"),
+  },
+  {
+    path: "/lot-complete",
+    name: "Lot Complete",
+    component: () =>
+      import(/* webpackChunkName: "lotComplete" */ "../views/LotComplete.vue"),
+  },
+  {
     path: "/muestra/:id",
     name: "Sample",
     // route level code-splitting

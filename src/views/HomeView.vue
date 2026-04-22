@@ -1,12 +1,11 @@
 <template>
   <v-container fluid class="d-flex flex-column">
-    <div class="d-flex align-baseline">
+    <lot-stepper :current-step="1" />
+    <div class="d-flex align-baseline mt-2">
       <h3 class="mb-3 ml-4">Lot #:</h3>
       <span @click="" class="ml-1">{{ getAnalyzingLotNo }}</span>
       <h4 class="mb-3 ml-4">Last sample #:</h4>
       <span class="ml-1">{{ last_analysed_id }}</span>
-      <h4 class="mb-3 ml-4">BRT taken:</h4>
-      <span></span>
       <v-spacer></v-spacer>
       <v-btn class="ml-3" text to="/log">
         <v-icon>mdi-format-list-bulleted-square</v-icon>
@@ -14,15 +13,7 @@
       </v-btn>
       <v-btn class="ml-3" @click="takeExtraPicture()">
         <v-icon>mdi-camera-plus</v-icon>
-        Take extra picture
-      </v-btn>
-      <v-btn class="ml-3" to="/broken-belly-test">
-        <v-icon>mdi-arrow-expand-horizontal</v-icon>
-        BRT
-      </v-btn>
-      <v-btn class="ml-3" @click="captureGutsWeight" color="primary">
-        <v-icon>mdi-weight</v-icon>
-        Capture Guts Weight
+        Extra picture
       </v-btn>
     </div>
     <v-row style="flex: 1">
@@ -100,17 +91,25 @@
       </v-col>
     </v-row>
 
-    <div class="mt-0">
-      <v-spacer></v-spacer>
-
+    <div class="mt-0 d-flex justify-end align-center">
       <v-btn
         @click="finishLotAnalysis"
+        size="large"
+        color="grey"
+        variant="text"
+        class="mr-3 mt-5"
+      >
+        <v-icon start>mdi-close</v-icon>
+        Cancel Lot
+      </v-btn>
+      <v-btn
+        @click="goToBRT"
         size="x-large"
-        color="success"
+        color="primary"
         class="mr-5 mt-5"
       >
-        <v-icon>mdi-check</v-icon>
-        Finish Lot
+        Next: BRT
+        <v-icon end>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
 
@@ -118,13 +117,6 @@
       v-model="saveDialog"
       @confirm="continueRoute(true)"
       @cancel="continueRoute()"
-    />
-
-    <guts-weight-dialog
-      v-model="gutsWeightDialog"
-      :weight="capturedGutsWeight"
-      @confirm="confirmGutsWeight"
-      @cancel="cancelGutsWeight"
     />
 
     <v-btn
@@ -157,7 +149,7 @@ import commandList from "@/components/commandList.vue";
 import pushNotification from "@/components/pushNotification.vue";
 import PreviewExtraImage from "@/components/previewExtraImage.vue";
 import SaveDialog from "@/components/SaveDialog.vue";
-import GutsWeightDialog from "@/components/GutsWeightDialog.vue";
+import LotStepper from "@/components/LotStepper.vue";
 
 export default {
   components: {
@@ -165,7 +157,7 @@ export default {
     PreviewExtraImage,
     commandList,
     SaveDialog,
-    GutsWeightDialog,
+    LotStepper,
   },
   data: () => ({
     lot: null,
@@ -185,8 +177,6 @@ export default {
     analysis_data: null,
     laser_state: false,
     extraImage: null,
-    gutsWeightDialog: false,
-    capturedGutsWeight: 0,
   }),
   computed: {
     ...mapState(["socket_instance", "last_analysed_id"]),
@@ -323,7 +313,11 @@ export default {
       this.lot = null;
       this.$store.dispatch("setAnalyzingLot", null);
       this.$router.push({ path: "/" });
-      // alert("Lot analysis finished");
+    },
+
+    goToBRT() {
+      if (this.analyzed_image) this.saveData();
+      this.$router.push("/broken-belly-test");
     },
 
     capture() {
@@ -471,26 +465,6 @@ export default {
       // this.putData("capture", {});
       // this.capture_state = !this.capture_state;
       // this.resetLive();
-    },
-
-    captureGutsWeight() {
-      this.capturedGutsWeight = this.live.weight;
-      this.gutsWeightDialog = true;
-      this.notify("Guts weight captured", "info");
-    },
-
-    cancelGutsWeight() {
-      this.capturedGutsWeight = 0;
-    },
-
-    confirmGutsWeight(weight) {
-      console.log("Guts weight confirmed:", weight);
-      this.notify(`Guts weight saved: ${weight}g`, "success");
-
-      // TODO: send to backend
-      // this.socket_instance.emit('save_guts_weight', { weight });
-
-      this.capturedGutsWeight = 0;
     },
 
     handleHasBeenDebounced() {

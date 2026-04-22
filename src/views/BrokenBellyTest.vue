@@ -1,10 +1,11 @@
 <template>
   <v-container style="height: 100%">
+    <lot-stepper :current-step="2" />
     <!-- <div>
       <h1>Configuration</h1>
     </div> -->
 
-    <div class="d-flex align-baseline">
+    <div class="d-flex align-baseline mt-2">
       <h4 class="mb-3 ml-4">Last sample #:</h4>
       <span class="ml-1">{{ last_analysed_id }}</span>
 
@@ -67,6 +68,19 @@
         </v-row>
       </v-col>
     </v-row>
+
+    <!-- Step navigation -->
+    <div class="d-flex justify-space-between mt-4 px-4">
+      <v-btn variant="text" color="grey" @click="$router.push('/analyse-lot')">
+        <v-icon start>mdi-arrow-left</v-icon>
+        Back: Samples
+      </v-btn>
+      <v-btn color="primary" size="x-large" @click="goToGutsWeight">
+        Next: Guts Weight
+        <v-icon end>mdi-arrow-right</v-icon>
+      </v-btn>
+    </div>
+
     <request-modal ref="loadingModal" />
     <notification ref="notification" />
     <commandList :commands-list="getCommands" ref="commandList" />
@@ -89,6 +103,7 @@ import Line from "@/components/lineChart.vue";
 import commandList from "@/components/commandList.vue";
 import requestModal from "@/components/requestModal.vue";
 import pushNotification from "@/components/pushNotification.vue";
+import LotStepper from "@/components/LotStepper.vue";
 
 // --- Parámetros de comportamiento (ajústalos en pruebas reales) ---
 const SAMPLE_INTERVAL_MS = 50; // cada cuánto pedimos tensión
@@ -105,6 +120,7 @@ export default {
     requestModal,
     commandList,
     notification: pushNotification,
+    LotStepper,
   },
   computed: {
     ...mapState(["socket_instance", "last_analysed_id"]),
@@ -178,6 +194,9 @@ export default {
     lastChartUpdate: 0,
   }),
   methods: {
+    goToGutsWeight() {
+      this.$router.push("/guts-weight");
+    },
     evokeAction(action) {
       switch (action) {
         case "HOME":
