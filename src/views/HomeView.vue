@@ -1,118 +1,165 @@
 <template>
-  <v-container fluid class="d-flex flex-column">
+  <v-container fluid class="d-flex flex-column pa-0">
+    <!-- Stepper: su propia fila -->
     <lot-stepper :current-step="1" />
-    <div class="d-flex align-baseline mt-2">
-      <h3 class="mb-3 ml-4">Lot #:</h3>
-      <span @click="" class="ml-1">{{ getAnalyzingLotNo }}</span>
-      <h4 class="mb-3 ml-4">Last sample #:</h4>
-      <span class="ml-1">{{ last_analysed_id }}</span>
-      <v-spacer></v-spacer>
-      <v-btn class="ml-3" text to="/log">
-        <v-icon>mdi-format-list-bulleted-square</v-icon>
-        Log
+
+    <!-- Info bar: lot info + status + buttons -->
+    <div class="d-flex align-center px-4 py-2 info-bar">
+      <span class="text-body-2 mr-2">
+        Lot <strong>#{{ getAnalyzingLotNo }}</strong>
+      </span>
+      <span class="text-body-2 text-medium-emphasis">
+        &nbsp;·&nbsp; Last: <strong>#{{ last_analysed_id }}</strong>
+      </span>
+
+      <v-chip
+        :color="captureStatus.color"
+        size="small"
+        variant="tonal"
+        class="ml-4"
+        :prepend-icon="captureStatus.icon"
+      >
+        {{ captureStatus.text }}
+      </v-chip>
+
+      <v-spacer />
+
+      <v-btn size="small" variant="text" to="/log" class="mr-1">
+        <v-icon start>mdi-format-list-bulleted-square</v-icon>Log
       </v-btn>
-      <v-btn class="ml-3" @click="takeExtraPicture()">
-        <v-icon>mdi-camera-plus</v-icon>
-        Extra picture
+      <v-btn size="small" variant="outlined" @click="takeExtraPicture()">
+        <v-icon start>mdi-camera-plus</v-icon>Extra picture
       </v-btn>
     </div>
-    <v-row style="flex: 1">
-      <v-col style="border-right: solid 1px lightgray" cols="6">
+
+    <!-- Images row -->
+    <v-row style="flex: 1; margin: 0" class="images-row">
+      <!-- LIVE panel - mayor -->
+      <v-col
+        cols="8"
+        class="d-flex flex-column pa-3"
+        style="border-right: solid 1px lightgray"
+      >
+        <div class="d-flex align-center mb-1">
+          <v-chip
+            color="red"
+            size="x-small"
+            variant="flat"
+            class="mr-2 live-chip"
+          >
+            <v-icon start size="x-small">mdi-record</v-icon>LIVE
+          </v-chip>
+          <span
+            class="text-h6 font-weight-bold"
+            :class="`text-${weightIsStable ? 'green' : 'red'}`"
+            >{{ live.weight }} g</span
+          >
+        </div>
         <img
-          class="the_fuckin_image elevation-2"
+          class="the_image elevation-2"
+          :class="{ 'capturing-pulse': debounceRequested || isProcessing }"
           :src="`${url_server}video_feed`"
           crossorigin="anonymous"
           ref="liveImage"
         />
       </v-col>
-      <v-col cols="6">
-        <!-- analyzed_image -->
+
+      <!-- CAPTURED panel - menor -->
+      <v-col cols="4" class="d-flex flex-column pa-3">
+        <div class="d-flex align-center mb-1">
+          <v-chip
+            color="blue-darken-1"
+            size="x-small"
+            variant="flat"
+            class="mr-2"
+            >CAPTURED</v-chip
+          >
+          <span class="text-h6 font-weight-bold">{{ captured.weight }} g</span>
+        </div>
         <img
-          class="the_fuckin_image elevation-2"
+          v-if="analyzed_image"
+          class="the_image elevation-2"
           :src="analyzed_image"
           ref="capturedImage"
           crossorigin="anonymous"
         />
+        <div
+          v-else
+          class="the_image captured-placeholder d-flex flex-column align-center justify-center"
+        >
+          <v-icon size="large" color="grey-lighten-1"
+            >mdi-image-off-outline</v-icon
+          >
+          <span class="text-caption text-grey mt-1">No sample yet</span>
+        </div>
+        <!-- Captured indicators -->
+        <div class="d-flex flex-wrap px-4">
+          <div
+            v-for="(indicator, i) in captured.indicators"
+            :key="`cap-${i}`"
+            class="indicator-wrapper d-flex flex-column align-center"
+          >
+            <span
+              class="text-caption"
+              :class="`text-${indicator.status ? 'black' : 'grey'}`"
+              >{{ indicator.name }}</span
+            >
+            <div
+              class="indicator"
+              :class="indicator.status ? 'active' : 'inactive'"
+            ></div>
+          </div>
+        </div>
       </v-col>
     </v-row>
 
-    <v-row style="border-bottom: solid 1px lightgray; flex: none" class="pb-2">
+    <!-- Indicators row -->
+    <v-row
+      style="flex: none; margin: 0; border-bottom: solid 1px lightgray"
+      class="pb-2"
+    >
+      <!-- Live indicators -->
       <v-col
-        cols="6"
-        class="d-flex flex-column px-7"
+        cols="8"
+        class="d-flex flex-wrap px-4"
         style="border-right: solid 1px lightgray"
       >
-        <h2>Weight:</h2>
-        <h1 class="ml-3" :class="`text-${weightIsStable ? 'green' : 'red'}`">
-          {{ live.weight }} g
-        </h1>
-        <!-- <v-col cols="12" class="d-flex"> -->
-        <v-row>
-          <v-col
-            cols="2"
-            v-for="(indicator, i) in live.indicators"
-            class="d-flex px-3 indicator-wrapper"
+        <div
+          v-for="(indicator, i) in live.indicators"
+          :key="`live-${i}`"
+          class="indicator-wrapper d-flex flex-column align-center"
+        >
+          <span
+            class="text-caption"
+            :class="`text-${indicator.status ? 'black' : 'grey'}`"
+            >{{ indicator.name }}</span
           >
-            <div class="d-flex flex-column align-center">
-              <span :class="`text-${indicator.status ? 'black' : 'grey'}`">
-                {{ indicator.name }}
-              </span>
-              <div
-                class="indicator"
-                :class="indicator.status ? 'active' : 'inactive'"
-              ></div>
-            </div>
-          </v-col>
-        </v-row>
-        <!-- </v-col> -->
-      </v-col>
-      <v-col cols="6" class="d-flex flex-column px-7">
-        <h2>Weight:</h2>
-        <h1 class="ml-3">{{ captured.weight }} g</h1>
-        <!-- <v-col cols="12" class="d-flex"> -->
-        <v-row>
-          <v-col
-            cols="2"
-            v-for="(indicator, i) in captured.indicators"
-            class="d-flex px-3 indicator-wrapper"
-          >
-            <div class="d-flex flex-column align-center">
-              <span :class="`text-${indicator.status ? 'black' : 'grey'}`">
-                {{ indicator.name }}
-              </span>
-              <div
-                class="indicator"
-                :class="indicator.status ? 'active' : 'inactive'"
-              ></div>
-            </div>
-          </v-col>
-        </v-row>
-        <!-- </v-col> -->
+          <div
+            class="indicator"
+            :class="indicator.status ? 'active' : 'inactive'"
+          ></div>
+        </div>
       </v-col>
     </v-row>
 
-    <div class="mt-0 d-flex justify-end align-center">
+    <!-- Bottom buttons -->
+    <div class="d-flex justify-end align-center px-4 py-2">
       <v-btn
         @click="finishLotAnalysis"
         size="large"
         color="grey"
         variant="text"
-        class="mr-3 mt-5"
+        class="mr-3"
       >
-        <v-icon start>mdi-close</v-icon>
-        Cancel Lot
+        <v-icon start>mdi-close</v-icon>Cancel Lot
       </v-btn>
-      <v-btn
-        @click="goToBRT"
-        size="x-large"
-        color="primary"
-        class="mr-5 mt-5"
-      >
+      <v-btn @click="goToBRT" size="x-large" color="primary">
         Next: BRT
         <v-icon end>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
 
+    <!-- Modals & helpers -->
     <save-dialog
       v-model="saveDialog"
       @confirm="continueRoute(true)"
@@ -120,7 +167,7 @@
     />
 
     <v-btn
-      style="  position: absolute;bottom: 55px;right: 15px;"
+      style="position: absolute; bottom: 55px; left: 15px"
       color="primary"
       icon
       @click="openCommandList"
@@ -136,7 +183,6 @@
       @close="canceledExtraImage"
     />
     <notification ref="notification" />
-    <!-- trigger command list with help btn -->
     <commandList :commands-list="getCommands" ref="commandList" />
   </v-container>
 </template>
@@ -164,6 +210,7 @@ export default {
     saveDialog: false,
     to: null,
     weightIsStable: false,
+    isProcessing: false,
     live: {
       weight: 0,
       indicators: [],
@@ -188,13 +235,27 @@ export default {
       const { actions, defects } = config;
       return { ...defects, ...actions };
     },
-
     filtered_indicators() {
-      const { indicators } = this.captured;
-      return indicators.reduce((acc, value, index) => {
+      return this.captured.indicators.reduce((acc, value) => {
         if (value.status) acc.push(value.id);
         return acc;
       }, []);
+    },
+    captureStatus() {
+      if (this.debounceRequested) {
+        return { text: "Stabilizing...", color: "orange", icon: "mdi-scale" };
+      }
+      if (this.isProcessing) {
+        return { text: "Processing...", color: "blue", icon: "mdi-cog-sync" };
+      }
+      if (this.analyzed_image) {
+        return {
+          text: "Ready for next sample",
+          color: "green",
+          icon: "mdi-check-circle",
+        };
+      }
+      return { text: "Ready to capture", color: "primary", icon: "mdi-camera" };
     },
   },
   methods: {
@@ -212,14 +273,13 @@ export default {
     evokeAction(action) {
       switch (action) {
         case "CAPTURE":
-          // this.capture();
           this.debounceRequested = true;
           console.log("debounce requested");
           this.handleWeightChanged(this.live.weight, 0);
           this.timeoutSample = setTimeout(() => {
             this.debounceRequested = false;
             console.log("debounce timer cleared");
-          }, 4000); // Debounce time de 1000 ms
+          }, 4000);
           break;
         case "CANCEL":
           this.cancel();
@@ -260,20 +320,23 @@ export default {
       const { defects, actions } = config;
       const { indicators } = this.live;
 
-      // Handle save dialog shortcuts
       if (this.saveDialog) {
-        if (key === "y") { event.preventDefault(); this.continueRoute(true); }
-        if (key === "n") { event.preventDefault(); this.continueRoute(); }
+        if (key === "y") {
+          event.preventDefault();
+          this.continueRoute(true);
+        }
+        if (key === "n") {
+          event.preventDefault();
+          this.continueRoute();
+        }
         return;
       }
 
-      //if in defects exist on key name with the key pressed
       if (defects.hasOwnProperty(key)) {
         event.preventDefault();
         const index = indicators.findIndex(
-          (indicator) => indicator.key.toLowerCase() == key
+          (indicator) => indicator.key.toLowerCase() == key,
         );
-
         this.live.indicators[index].status = !indicators[index].status;
       } else if (actions.hasOwnProperty(key)) {
         const index = actions[key].name;
@@ -326,6 +389,7 @@ export default {
       this.captured = JSON.parse(JSON.stringify(this.live));
       this.putData("capture", {});
       this.capture_state = !this.capture_state;
+      this.isProcessing = true;
       this.resetLive();
     },
 
@@ -334,6 +398,7 @@ export default {
       this.saveDialog = false;
       this.resetLive();
       this.analyzed_image = null;
+      this.isProcessing = false;
     },
 
     dataURLtoFile(imageElement, filename, returnAsdataURL = false) {
@@ -343,7 +408,6 @@ export default {
       canvas.height = 650;
       context.drawImage(imageElement, 0, 0);
 
-      // Get the data URL of the image from the canvas
       const dataURL = canvas.toDataURL("image/jpeg");
       if (returnAsdataURL) {
         const arr = dataURL.split(",");
@@ -376,8 +440,6 @@ export default {
       const { analysis_data, filtered_indicators, captured } = this;
       const { weight } = captured;
 
-      // console.warn(filtered_indicators);
-
       const formData = new FormData();
       formData.append("defects", JSON.stringify(filtered_indicators));
       formData.append("weight", weight);
@@ -385,19 +447,13 @@ export default {
       formData.append("height", analysis_data.height);
       formData.append("head", analysis_data.head);
       formData.append("tail_trigger", analysis_data.tail_trigger);
-      formData.append("image", file); // Append the image data URL
+      formData.append("image", file);
       formData.append("lot_no", this.getAnalyzingLotNo);
-
-      // console.log("Form Data:");
-      // for (const [key, value] of formData.entries()) {
-      //   console.log(key, value);
-      // }
 
       this.submitRequest(formData);
     },
 
     async submitRequest(formData) {
-      // const loading = this.$loading();
       axios
         .post(`${this.url}:${this.url_port}/add`, formData, {
           headers: {
@@ -407,27 +463,13 @@ export default {
         })
         .then(
           (response) => {
-            // this.confirm = false;
-            // this.reset();
             console.log(response.data.id);
             this.$store.dispatch("setLastAnalysedId", response.data.id);
-            // setTimeout(() => {
-            //   loading.close();
-            //   window.location.reload();
-            // }, 1000);
-            // this.$notify({
-            //   message: "Información guardada con éxito.",
-            //   type: "success"
-            // });
           },
           (error) => {
             this.confirm = false;
             console.log(error);
-            // setTimeout(() => {
-            //   loading.close();
-            // }, 1000);
-            // this.$notify.error("Ha habido un error.");
-          }
+          },
         );
     },
 
@@ -440,7 +482,6 @@ export default {
       this.captured.indicators.forEach((indicator) => {
         indicator.status = false;
       });
-
       this.captured.weight = 0;
     },
 
@@ -448,23 +489,14 @@ export default {
       this.live.indicators.forEach((indicator) => {
         indicator.status = false;
       });
-
       this.live.weight = 0;
     },
 
     takeExtraPicture() {
       const imageElement = this.$refs.liveImage;
       const previewModal = this.$refs.imagePreview;
-
       this.extraImage = this.dataURLtoFile(imageElement, "image.jpg", true);
-
-      // previewModal.previewImage();
       previewModal.open();
-
-      // this.captured = JSON.parse(JSON.stringify(this.live));
-      // this.putData("capture", {});
-      // this.capture_state = !this.capture_state;
-      // this.resetLive();
     },
 
     handleHasBeenDebounced() {
@@ -491,29 +523,18 @@ export default {
         if (this.timeoutSample) {
           clearTimeout(this.timeoutSample);
           this.debounceRequested = false;
-          console.log("debounce timer cleared");
         }
-
-        console.log(
-          `El peso se ha estabilizado en: ${newValue} con una diferencia menor al 2%`
-        );
         this.weightIsStable = true;
         this.handleHasBeenDebounced(newValue);
       } else {
-        // Si la diferencia es igual o mayor al 2%, aplica el debouncing
         this.debounceTimer = setTimeout(() => {
           if (this.timeoutSample) {
             clearTimeout(this.timeoutSample);
             this.debounceRequested = false;
-            console.log("debounce timer cleared");
           }
-
-          console.log(
-            `El peso se ha estabilizado en: ${newValue} después del debounce time`
-          );
           this.weightIsStable = true;
           this.handleHasBeenDebounced(newValue);
-        }, 1000); // Debounce time de 1000 ms
+        }, 1000);
       }
     },
   },
@@ -534,8 +555,7 @@ export default {
     window.addEventListener("keyup", this.keyboardCatch);
     this.interval = setInterval(this.updateNet, 250);
 
-    // iterate over the defects and create the indicators
-    Object.keys(defects).forEach((value, index) => {
+    Object.keys(defects).forEach((value) => {
       const { name, id } = defects[value];
       this.live.indicators.push({ name, status: false, key: value, id });
       this.captured.indicators.push({ name, status: false, key: value, id });
@@ -552,7 +572,6 @@ export default {
     const { socket_instance } = this;
 
     socket_instance.emit("set_tare", {});
-
     socket_instance.emit("enter_to_weight_mode", {});
 
     socket_instance.on("weight_update", (data) => {
@@ -560,17 +579,13 @@ export default {
     });
 
     socket_instance.on("analysis_data", (data) => {
-      const la_merde = JSON.parse(data);
-      this.analysis_data = la_merde;
-      // console.log(la_merde);
+      this.analysis_data = JSON.parse(data);
     });
 
     socket_instance.on("frame_ready", () => {
       this.analyzed_image = `${this.url_server}analyzed_image?${Date.now()}`;
+      this.isProcessing = false;
     });
-
-    if (this.getAnalyzingLotNo == config.NO_LOT_SELECTED) {
-    }
   },
 
   beforeDestroy() {
@@ -588,17 +603,10 @@ export default {
 
   watch: {
     lot: {
-      handler: function (newVal, oldVal) {
-        console.warn("lot changed", newVal, oldVal);
-
+      handler: function (newVal) {
         this.$store.dispatch("setAnalyzingLot", newVal);
-
         const fish_species = newVal?.fish_species;
         const type = newVal?.type;
-
-        console.warn("Vision values", fish_species, type);
-
-        // post the fish species and type to the server
         this.socket_instance.emit("set_fish_data", { fish_species, type });
       },
       deep: true,
@@ -614,27 +622,77 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.the_fuckin_image {
-  width: 80%;
-  min-width: 80%;
-  min-height: 100%;
-  border: solid 1px gray;
+.info-bar {
+  border-bottom: solid 1px lightgray;
+  flex-shrink: 0;
+}
+
+.images-row {
+  flex: 1;
+}
+
+.the_image {
+  width: 100%;
+  max-height: calc(100vh - 320px);
+  object-fit: contain;
+  border: solid 1px #ccc;
   border-radius: 5px;
-  background-color: gray;
-  /* height: 300px; */
+  background-color: #444;
+  display: block;
 }
+
+.capturing-pulse {
+  animation: pulse-border 0.8s ease-in-out infinite;
+  outline: 3px solid orange;
+  outline-offset: 2px;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    outline-color: orange;
+  }
+  50% {
+    outline-color: transparent;
+  }
+}
+
+.captured-placeholder {
+  height: 200px;
+  background-color: #f5f5f5;
+  border: 2px dashed #ccc !important;
+}
+
+.live-chip {
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 .indicator-wrapper {
-  max-height: 75px;
+  width: 60px;
+  max-height: 60px;
+  padding: 4px 6px;
 }
+
 .indicator {
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
 }
 
 .inactive {
   background-color: red;
 }
+
 .active {
   background-color: greenyellow;
 }

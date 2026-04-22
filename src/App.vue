@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main class="main-container">
-      <v-app-bar class="px-4">
+      <v-app-bar v-if="$route.path !== '/analyse-lot'" class="px-4">
         <v-toolbar-title class="h4-header">
           {{ this.$route.name }}
         </v-toolbar-title>
