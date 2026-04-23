@@ -20,7 +20,7 @@
       {{ statusMessage }}
     </p>
 
-    <v-row style="height: 100%" justify="center">
+    <v-row justify="center">
       <v-col cols="10">
         <v-row>
           <v-col cols="4">
@@ -39,7 +39,7 @@
             </h2>
             grams.
           </v-col>
-          <v-col cols="12">
+          <v-col  cols="12">
             <Line ref="ntm" :labels="labels" :data="data" />
           </v-col>
           <v-col cols="12" class="d-flex">

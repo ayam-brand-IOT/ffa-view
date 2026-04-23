@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main class="main-container">
-      <v-app-bar v-if="$route.path !== '/analyse-lot'" class="px-4">
+      <v-app-bar v-if="!isOnAnalyseLot" class="px-4">
         <v-toolbar-title class="h4-header">
           {{ this.$route.name }}
         </v-toolbar-title>
@@ -46,6 +46,14 @@ export default {
   },
   computed: {
     ...mapState(["socket_instance"]),
+    isOnAnalyseLot() {
+      const isOnAnalyseLot = this.$route.path === "/analyse-lot";
+      const isOnGutsWeight = this.$route.path === "/guts-weight";
+      const isOnBrokenBellyTest = this.$route.path === "/broken-belly-test";
+      const isOnLotComplete = this.$route.path === "/lot-complete";
+
+      return isOnAnalyseLot || isOnGutsWeight || isOnBrokenBellyTest || isOnLotComplete;
+    },
   },
   data: () => ({
     socket_status: false,

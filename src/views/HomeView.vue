@@ -633,7 +633,7 @@ export default {
 
 .the_image {
   width: 100%;
-  max-height: calc(100vh - 320px);
+  max-height: calc(100vh - 420px);
   object-fit: contain;
   border: solid 1px #ccc;
   border-radius: 5px;

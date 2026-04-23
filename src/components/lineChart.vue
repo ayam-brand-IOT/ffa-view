@@ -1,5 +1,7 @@
 <template>
-  <Line ref="pgc" :data="chartData" :options="chartOptions" />
+  <div style="position: relative; height: 550px; max-height: 850px">
+    <Line ref="pgc" :data="chartData" :options="chartOptions" />
+  </div>
 </template>
 
 <script>
@@ -53,7 +55,10 @@ export default {
       };
     },
     chartOptions() {
-      return {};
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+      };
     },
   },
   methods: {

@@ -21,8 +21,8 @@
               </v-list-item>
             </v-list>
             <v-divider></v-divider>
-            <p class="mt-4">Click on the download icon to export the lot data to Excel</p>
-            <lot-list ref="lots" downloadable @downloadLot="exportData" />
+            <p class="mt-4">Click the Excel icon to export samples, or the PDF icon for the full FFA quality report.</p>
+            <lot-list ref="lots" downloadable @downloadLot="exportData" @downloadPdf="exportPdf" />
           </v-card-text>
         </v-card>
       </v-col>
@@ -50,6 +50,31 @@ export default {
     url: () => config.url(),
   },
   methods: {
+    async exportPdf(item) {
+      this.$refs.loadingModal.open();
+      const url = `${this.url}:${this.url_port}`;
+
+      axios({
+        url: `${url}/download-lot-report/${item.lot_no}`,
+        method: "GET",
+        responseType: "blob",
+      }).then(
+        (response) => {
+          this.$refs.loadingModal.success();
+          const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+          const link = document.createElement("a");
+          link.href = window.URL.createObjectURL(new Blob([response.data]));
+          link.setAttribute("download", `${date}_${item.lot_no}.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        },
+        (error) => {
+          console.log(error);
+          this.$refs.loadingModal.fail();
+        }
+      );
+    },
     async exportData(item) {
       this.$refs.loadingModal.open();
 

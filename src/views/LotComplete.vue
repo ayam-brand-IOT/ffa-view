@@ -29,6 +29,24 @@
         <v-divider />
 
         <v-list-item
+          prepend-icon="mdi-file-pdf-box"
+          title="Download FFA Report"
+          subtitle="Full quality control report as .pdf"
+          color="error"
+          @click="downloadPdf"
+          :loading="downloadingPdf"
+          rounded="lg"
+          active-color="error"
+          class="mb-1"
+        >
+          <template #append>
+            <v-icon color="error">mdi-download</v-icon>
+          </template>
+        </v-list-item>
+
+        <v-divider />
+
+        <v-list-item
           prepend-icon="mdi-format-list-bulleted-square"
           title="View Logs"
           subtitle="Inspect the analysis event log"
@@ -67,6 +85,7 @@ export default {
   name: "LotComplete",
   data: () => ({
     downloading: false,
+    downloadingPdf: false,
   }),
   computed: {
     ...mapGetters(["getAnalyzingLotNo"]),
@@ -94,6 +113,26 @@ export default {
         console.error(error);
       } finally {
         this.downloading = false;
+      }
+    },
+    async downloadPdf() {
+      this.downloadingPdf = true;
+      try {
+        const response = await fetch(
+          `${this.url}:${this.url_port}/download-lot-report/${this.lotNo}`
+        );
+        if (!response.ok) throw new Error("Download failed");
+        const blob = await response.blob();
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${date}_${this.lotNo}.pdf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.downloadingPdf = false;
       }
     },
     goToLogs() {

@@ -31,10 +31,15 @@
             </v-btn>
           </div>
           
-          <!-- Downloadable button -->
-          <v-btn v-else-if="downloadable" class="edit-button" icon color="success" @click="downloadLot(item)" title="Download Excel">
-            <v-icon>mdi-file-excel</v-icon>
-          </v-btn>
+          <!-- Downloadable buttons (Excel + PDF) -->
+          <div v-else-if="downloadable" class="d-flex gap-1">
+            <v-btn class="edit-button" icon color="success" @click="downloadLot(item)" title="Download Excel">
+              <v-icon>mdi-file-excel</v-icon>
+            </v-btn>
+            <v-btn class="edit-button" icon color="error" @click="downloadPdf(item)" title="Download FFA Report (PDF)">
+              <v-icon>mdi-file-pdf-box</v-icon>
+            </v-btn>
+          </div>
           
           <!-- Original single button logic -->
           <v-btn v-else-if="editable" class="edit-button" icon color="blue" @click="editLot(item)" title="View Log">
@@ -170,6 +175,9 @@ export default {
     },
     downloadLot(item) {
       this.$emit("downloadLot", item);
+    },
+    downloadPdf(item) {
+      this.$emit("downloadPdf", item);
     },
     getLots() {
       // const url = 'http://127.0.0.1:${this.url_port}';
