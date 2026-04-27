@@ -195,7 +195,11 @@ export default {
   }),
   methods: {
     goToGutsWeight() {
-      this.$router.push("/guts-weight");
+      if (this.state === "finished" && this.break_point > 0) {
+        this.saveData({ navigateTo: "/guts-weight" });
+      } else {
+        this.$router.push("/guts-weight");
+      }
     },
     evokeAction(action) {
       switch (action) {
@@ -259,8 +263,14 @@ export default {
 
     run_test() {
       // botón Start/Stop: inicio manual o parada manual
-      if (this.testIsRunning) this.stopTest("manual-stop");
-      else this.startTest("manual");
+      if (this.testIsRunning) {
+        this.stopTest("manual-stop");
+      } else if (this.state === "finished" && this.break_point > 0) {
+        // Guarda la prueba anterior antes de iniciar una nueva.
+        this.saveData({ startAfter: true });
+      } else {
+        this.startTest("manual");
+      }
     },
 
     notify(text, type, time) {
@@ -389,7 +399,7 @@ export default {
       console.warn("force_data", this.force_data.length);
     },
 
-    saveData() {
+    saveData(options = {}) {
       const { break_point, getAnalyzingLotNo } = this;
 
       const url = `${this.url}:${this.url_port}/add-lot-tension`;
@@ -408,6 +418,11 @@ export default {
           () => {
             this.$refs.loadingModal.success();
             this.resetTest();
+            if (options.startAfter) {
+              this.startTest("manual");
+            } else if (options.navigateTo) {
+              this.$router.push(options.navigateTo);
+            }
           },
           (error) => {
             console.log(error);
@@ -473,21 +488,21 @@ export default {
         // actualizar máximo
         if (tension > this.max_tension) {
           this.max_tension = tension;
-          this.descendingSamples = 0;
-        } else {
-          // bajando
-          if (tension < this.last_tension - 2) {
-            this.descendingSamples++;
-          } else {
-            this.descendingSamples = 0;
-          }
         }
 
-        const hasDroppedEnough = this.max_tension - tension >= BREAK_DROP_DELTA;
+        // Contar samples que ya cayeron al menos BREAK_DROP_DELTA desde el máximo.
+        // No requerimos que sigan bajando estrictamente, porque al romperse la
+        // tensión cae a ~0 y se queda plana (caso en el que la condición
+        // tension < last_tension - 2 fallaba y reseteaba el contador).
+        const dropFromMax = this.max_tension - tension;
+        if (dropFromMax >= BREAK_DROP_DELTA) {
+          this.descendingSamples++;
+        } else {
+          this.descendingSamples = 0;
+        }
 
         if (
           this.force_data.length > 5 &&
-          hasDroppedEnough &&
           this.descendingSamples >= BREAK_DESC_SAMPLES
         ) {
           this.testFinished("tension drop");

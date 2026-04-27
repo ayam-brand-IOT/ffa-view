@@ -162,7 +162,6 @@ export default {
   mounted() {
     const { socket_instance } = this;
 
-    socket_instance.emit("set_tare", {});
     socket_instance.emit("enter_to_weight_mode", {});
 
     socket_instance.on("weight_update", (data) => {
@@ -173,9 +172,16 @@ export default {
         : 100;
       this.weightIsStable = diff < 5 && data > 0;
     });
+
+    // El backend sólo manda weight_update cuando se le pide con update_net,
+    // mismo patrón que HomeView. Sin esto el peso queda en 0.
+    this.weightInterval = setInterval(() => {
+      socket_instance.emit("update_net", {});
+    }, 250);
   },
   beforeUnmount() {
     this.socket_instance.off("weight_update");
+    if (this.weightInterval) clearInterval(this.weightInterval);
   },
 };
 </script>
