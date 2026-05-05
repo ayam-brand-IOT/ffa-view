@@ -1,7 +1,6 @@
 <template>
   <v-dialog persistent v-model="show" width="40%">
     <v-card height="100%" class="pa-5">
-      <!-- show Image preview -->
       <v-img
         v-if="imagePreview"
         :src="imagePreview"
@@ -10,8 +9,14 @@
       ></v-img>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="warning" text @click="close">Close</v-btn>
-        <v-btn color="primary" text @click="add">Add</v-btn>
+        <v-btn color="warning" text @click="cancel">
+          <v-icon start>mdi-close</v-icon>Cancel
+          <v-chip size="x-small" class="ml-2">C</v-chip>
+        </v-btn>
+        <v-btn color="primary" text @click="add">
+          <v-icon start>mdi-check</v-icon>Save
+          <v-chip size="x-small" class="ml-2">Y</v-chip>
+        </v-btn>
       </v-card-actions>
     </v-card>
     <request-modal ref="loadingModal" />
@@ -62,8 +67,19 @@ export default {
       this.$emit("close");
     },
     add() {
-      // this.$emit("add");
       this.saveData();
+    },
+    handleKey(event) {
+      const key = event.key.toLowerCase();
+      if (key === "y") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.add();
+      } else if (key === "c") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.cancel();
+      }
     },
     saveData() {
       this.saveDialog = false;
@@ -127,6 +143,14 @@ export default {
     image: function (val) {
       console.warn("image changed");
       if (val) this.previewImage();
+    },
+    show(val) {
+      if (val) {
+        // Capture phase: corre antes que el keyup de HomeView
+        window.addEventListener("keyup", this.handleKey, true);
+      } else {
+        window.removeEventListener("keyup", this.handleKey, true);
+      }
     },
   },
 };

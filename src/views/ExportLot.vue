@@ -22,7 +22,18 @@
             </v-list>
             <v-divider></v-divider>
             <p class="mt-4">Click the Excel icon to export samples, or the PDF icon for the full FFA quality report.</p>
-            <lot-list ref="lots" downloadable @downloadLot="exportData" @downloadPdf="exportPdf" />
+            <v-text-field
+              v-model="searchQuery"
+              label="Search lots..."
+              placeholder="Search by WMS Code, Lot Number, or Supplier"
+              prepend-inner-icon="mdi-magnify"
+              clearable
+              outlined
+              dense
+              class="mt-3"
+              hide-details
+            />
+            <lot-list ref="lots" downloadable :search-query="searchQuery" @downloadLot="exportData" @downloadPdf="exportPdf" />
           </v-card-text>
         </v-card>
       </v-col>
@@ -43,7 +54,7 @@ export default {
     requestModal,
   },
   data: () => ({
-    // removed selected_item since it's no longer needed
+    searchQuery: "",
   }),
   computed: {
     url_port: () => config.url_port(),

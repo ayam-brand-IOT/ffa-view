@@ -95,6 +95,37 @@
     </div>
 
     <notification ref="notification" />
+
+    <v-dialog v-model="confirmDialog" max-width="420" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center ga-2 pt-4 px-4">
+          <v-icon color="warning">mdi-alert-circle-outline</v-icon>
+          Unsaved guts weight
+        </v-card-title>
+        <v-card-text class="px-4">
+          You have a captured weight of <strong>{{ capturedWeight }} g</strong> that hasn't been saved.
+          Do you want to save it before finishing?
+        </v-card-text>
+        <v-card-actions class="pb-4 px-4">
+          <v-btn variant="text" color="grey" @click="confirmDialog = false">
+            Cancel
+          </v-btn>
+          <v-spacer />
+          <v-btn variant="text" color="error" @click="skipAndFinish">
+            Skip & Finish
+          </v-btn>
+          <v-btn
+            color="success"
+            variant="flat"
+            :loading="saving"
+            @click="saveAndFinish"
+          >
+            <v-icon start>mdi-check</v-icon>
+            Save & Finish
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -118,6 +149,7 @@ export default {
     saving: false,
     saved: false,
     savedWeight: 0,
+    confirmDialog: false,
   }),
   computed: {
     ...mapState(["socket_instance", "last_analysed_id"]),
@@ -156,6 +188,19 @@ export default {
       }
     },
     finishLot() {
+      if (!this.saved && this.capturedWeight > 0) {
+        this.confirmDialog = true;
+      } else {
+        this.$router.push("/lot-complete");
+      }
+    },
+    skipAndFinish() {
+      this.confirmDialog = false;
+      this.$router.push("/lot-complete");
+    },
+    async saveAndFinish() {
+      await this.saveGutsWeight();
+      this.confirmDialog = false;
       this.$router.push("/lot-complete");
     },
   },

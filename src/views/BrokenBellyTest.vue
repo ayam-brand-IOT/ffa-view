@@ -106,12 +106,15 @@ import pushNotification from "@/components/pushNotification.vue";
 import LotStepper from "@/components/LotStepper.vue";
 
 // --- Parámetros de comportamiento (ajústalos en pruebas reales) ---
-const SAMPLE_INTERVAL_MS = 50; // cada cuánto pedimos tensión
-const AUTO_START_THRESHOLD = 30; // g por encima de la línea base para considerar que ya se está jalando
-const AUTO_START_SAMPLES = 6; // 6 samples * 50ms = ~300 ms de subida sostenida
-const BREAK_DROP_DELTA = 20; // caída respecto al máximo para decir que "se rompió"
-const BREAK_DESC_SAMPLES = 4; // cuántos samples bajando después del pico
-const MAX_TEST_MS = 10000; // timeout de seguridad de la prueba (10s)
+const SAMPLE_INTERVAL_MS = 50;      // cada cuánto pedimos tensión
+const AUTO_START_THRESHOLD = 30;    // g sobre la línea base para considerar que ya se jala
+const AUTO_START_SAMPLES = 6;       // 6 samples * 50ms = ~300ms de subida sostenida
+const MIN_PEAK_FOR_BREAK = 80;      // g mínimos que debe alcanzar max_tension antes de buscar ruptura
+                                    // evita falsos positivos durante la colocación inestable del pez
+const BREAK_DROP_PERCENT = 0.50;    // caída del 50% desde el máximo para considerar ruptura
+                                    // (relativo: 20g de ruido en 400g max = 5% → no dispara)
+const BREAK_DESC_SAMPLES = 10;      // 10 * 50ms = 500ms sostenidos por debajo del umbral
+const MAX_TEST_MS = 10000;          // timeout de seguridad de la prueba (10s)
 
 export default {
   name: "BrokenBellyTest",
@@ -490,12 +493,13 @@ export default {
           this.max_tension = tension;
         }
 
-        // Contar samples que ya cayeron al menos BREAK_DROP_DELTA desde el máximo.
-        // No requerimos que sigan bajando estrictamente, porque al romperse la
-        // tensión cae a ~0 y se queda plana (caso en el que la condición
-        // tension < last_tension - 2 fallaba y reseteaba el contador).
+        // Detección de ruptura: porcentual + umbral mínimo de pico.
+        // - Solo buscamos ruptura si max_tension ya alcanzó MIN_PEAK_FOR_BREAK,
+        //   así la inestabilidad al colocar el pez no genera falsos positivos.
+        // - Usamos % en vez de delta fijo: ruido de 20g en un pico de 400g = 5%, no dispara.
         const dropFromMax = this.max_tension - tension;
-        if (dropFromMax >= BREAK_DROP_DELTA) {
+        const dropPercent = this.max_tension > 0 ? dropFromMax / this.max_tension : 0;
+        if (this.max_tension >= MIN_PEAK_FOR_BREAK && dropPercent >= BREAK_DROP_PERCENT) {
           this.descendingSamples++;
         } else {
           this.descendingSamples = 0;
