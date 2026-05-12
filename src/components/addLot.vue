@@ -15,9 +15,6 @@
         </v-card-title>
         <v-card-text>
           <v-container>
-            <!-- validate-on="blur"
-                @submit.prevent="addLot"
-                v-model="form" -->
             <v-form ref="formLot">
               <v-row>
                 <v-col cols="12" md="6">
@@ -40,11 +37,13 @@
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    :rules="[required]"
-                    v-model="lot.production_date"
+                    :rules="[required, dateRule]"
+                    v-model="displayDate"
                     variant="underlined"
                     label="Production date *"
-                    type="date"
+                    placeholder="DD/MM/YYYY"
+                    hint="Format: DD/MM/YYYY"
+                    persistent-hint
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12" md="6">
@@ -83,14 +82,18 @@
                   ></v-select>
                 </v-col>
                 <v-col cols="12" md="6">
-                  <v-text-field
+                  <v-autocomplete
                     :rules="[required]"
-                    v-model="lot.wms_code"
+                    v-model="lot.item_code"
                     variant="underlined"
-                    label="WMS Code*"
-                  ></v-text-field>
+                    :items="itemCodes"
+                    item-title="label"
+                    item-value="code"
+                    label="Item Code*"
+                    placeholder="Search by code or description..."
+                    clearable
+                  ></v-autocomplete>
                 </v-col>
-                
               </v-row>
               <small>*indicates required field</small>
               <v-card-actions>
@@ -123,13 +126,48 @@
 import axios from "axios";
 import config from "@/config";
 import requestModal from "./requestModal.vue";
-// import DateField from '@/components/DateField.vue'
+
+const ITEM_CODES = [
+  // Mackerel
+  { code: "10050071", label: "10050071 - Frozen Mackerel (HGT) Tail-On" },
+  { code: "10050010", label: "10050010 - Frozen Mackerel Buffet" },
+  { code: "10050011", label: "10050011 - Frozen Mackerel Buffet (B)" },
+  { code: "10050013", label: "10050013 - Frozen Mackerel Buffet (B) XL" },
+  { code: "10050012", label: "10050012 - Frozen Mackerel Buffet (T)" },
+  { code: "10050080", label: "10050080 - Frozen Mackerel for Fried Fish" },
+  { code: "10050060", label: "10050060 - Frozen Mackerel H&G (Tail-On)" },
+  { code: "10050070", label: "10050070 - Frozen Mackerel HGT (Tail-Off)" },
+  { code: "10050000", label: "10050000 - Frozen Mackerel Jitney" },
+  { code: "10050001", label: "10050001 - Frozen Mackerel Jitney (B)" },
+  { code: "10050003", label: "10050003 - Frozen Mackerel Jitney (B) XL" },
+  { code: "10050002", label: "10050002 - Frozen Mackerel Jitney (T)" },
+  { code: "10050020", label: "10050020 - Frozen Mackerel Tall" },
+  { code: "10050021", label: "10050021 - Frozen Mackerel Tall (B)" },
+  { code: "10050023", label: "10050023 - Frozen Mackerel Tall (B) XL" },
+  { code: "10050022", label: "10050022 - Frozen Mackerel Tall (T)" },
+  { code: "10050090", label: "10050090 - Frozen Mackerel Tower" },
+  { code: "10050091", label: "10050091 - Frozen Mackerel Tower (B)" },
+  { code: "10050093", label: "10050093 - Frozen Mackerel Tower (B) XL" },
+  { code: "10050092", label: "10050092 - Frozen Mackerel Tower (T)" },
+  // Sardines
+  { code: "10000091", label: "10000091 - Frozen Sardine (HGT) Tail-On" },
+  { code: "10000110", label: "10000110 - Frozen Sardine Tower" },
+  { code: "10000080", label: "10000080 - Frozen Sardines (H&G) Tail-On" },
+  { code: "10000090", label: "10000090 - Frozen Sardines (HGT) Tail-Off" },
+  { code: "10003000", label: "10003000 - Frozen Sardines (Whole)" },
+  { code: "10000010", label: "10000010 - Frozen Sardines Buffet" },
+  { code: "10000000", label: "10000000 - Frozen Sardines Jitney" },
+  { code: "10000001", label: "10000001 - Frozen Sardines Jitney (B)" },
+  { code: "10000040", label: "10000040 - Frozen Sardines Oval Cut (Big)" },
+  { code: "10000030", label: "10000030 - Frozen Sardines Oval Cut (Small)" },
+  { code: "10000100", label: "10000100 - Frozen Sardines Quarter Club" },
+  { code: "10000020", label: "10000020 - Frozen Sardines Tall" },
+];
 
 export default {
   name: "addLot",
   components: {
     requestModal,
-    // DateField,
   },
   data: () => ({
     formValid: false,
@@ -143,15 +181,22 @@ export default {
       type: null,
       size: null,
       order_no: null,
-      wms_code: null,
+      item_code: null,
     },
   }),
   computed: {
     required(v) {
       return !!v || "Field is required";
     },
+    dateRule() {
+      return (v) => {
+        if (!v) return true;
+        return /^\d{2}\/\d{2}\/\d{4}$/.test(v) || "Use format DD/MM/YYYY";
+      };
+    },
     url_port: () => config.url_port(),
     url: () => config.url(),
+    itemCodes: () => ITEM_CODES,
     lotStructure: () => ({
       supplier: null,
       lot_no: null,
@@ -160,12 +205,31 @@ export default {
       type: null,
       size: null,
       order_no: null,
-      wms_code: null,
+      item_code: null,
     }),
+    // Converts between DD/MM/YYYY (display) and YYYY-MM-DD (storage)
+    displayDate: {
+      get() {
+        const d = this.lot.production_date;
+        if (!d) return "";
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          const [y, m, day] = d.split("-");
+          return `${day}/${m}/${y}`;
+        }
+        return d;
+      },
+      set(val) {
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+          const [day, m, y] = val.split("/");
+          this.lot.production_date = `${y}-${m}-${day}`;
+        } else {
+          this.lot.production_date = val;
+        }
+      },
+    },
   },
   methods: {
     async editItem(item) {
-      //   this.$emit("editItem", item);
       this.editing = true;
       this.lot = { ...item };
       this.add_lot_dialog = true;
@@ -177,7 +241,6 @@ export default {
     async addLot() {
       const { editing } = this;
 
-      // const url = 'http://127.0.0.1:${this.url_port}';
       const url = `${this.url}:${this.url_port}`;
       const end_point = editing ? "/edit_lot" : "/add_lot";
 
@@ -189,7 +252,6 @@ export default {
         })
         .then(
           (response) => {
-            // console.log(response.data);
             if (editing) this.editing = false;
             this.$emit("onFinish", response.data);
             this.add_lot_dialog = false;
@@ -210,9 +272,7 @@ export default {
     },
     lot: {
       handler(val) {
-        this.formValid = Object.values(val).every((x) => {
-          return x;
-        });
+        this.formValid = Object.values(val).every((x) => !!x);
       },
       deep: true,
     },

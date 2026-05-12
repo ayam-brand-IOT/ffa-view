@@ -28,7 +28,7 @@
         <v-icon start>mdi-format-list-bulleted-square</v-icon>Log
       </v-btn>
       <v-btn size="small" variant="outlined" @click="takeExtraPicture()">
-        <v-icon start>mdi-camera-plus</v-icon>Extra picture
+        <v-icon start>mdi-camera-plus</v-icon>Other Findings
       </v-btn>
     </div>
 
@@ -138,6 +138,7 @@
             class="indicator"
             :class="indicator.status ? 'active' : 'inactive'"
           ></div>
+          <span class="key-label">{{ displayKey(indicator.key) }}</span>
         </div>
       </v-col>
     </v-row>
@@ -259,6 +260,10 @@ export default {
     },
   },
   methods: {
+    displayKey(key) {
+      const map = { tab: "Tab", shift: "Shft", escape: "Esc", control: "Ctrl", capslock: "Caps" };
+      return map[key] ?? String(key).toUpperCase();
+    },
     notify(message, type = "success") {
       this.$refs.notification.push(message, type);
     },
@@ -633,7 +638,7 @@ export default {
 
 .the_image {
   width: 100%;
-  max-height: calc(100vh - 420px);
+  max-height: calc(100vh - 440px);
   object-fit: contain;
   border: solid 1px #ccc;
   border-radius: 5px;
@@ -679,8 +684,20 @@ export default {
 
 .indicator-wrapper {
   width: 60px;
-  max-height: 60px;
+  max-height: 75px;
   padding: 4px 6px;
+}
+
+.key-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #1565C0;
+  letter-spacing: 0.03em;
+  margin-top: 5px;
+  line-height: 1;
+  border: solid 1px #1565C0;
+  border-radius: 3px;
+  padding: 2px 4px;
 }
 
 .indicator {

@@ -75,7 +75,7 @@ export default {
         type: "",
         size: "",
         order_no: "",
-        wms_code: "",
+        item_code: "",
       },
     };
   },
@@ -92,7 +92,7 @@ export default {
         type: "",
         size: "",
         order_no: "",
-        wms_code: "",
+        item_code: "",
       };
     },
     ...mapState({

@@ -81,7 +81,6 @@
       </v-btn>
     </div>
 
-    <request-modal ref="loadingModal" />
     <notification ref="notification" />
     <commandList :commands-list="getCommands" ref="commandList" />
     <v-btn
@@ -101,7 +100,6 @@ import config from "@/config";
 import { mapState, mapGetters } from "vuex";
 import Line from "@/components/lineChart.vue";
 import commandList from "@/components/commandList.vue";
-import requestModal from "@/components/requestModal.vue";
 import pushNotification from "@/components/pushNotification.vue";
 import LotStepper from "@/components/LotStepper.vue";
 
@@ -120,7 +118,6 @@ export default {
   name: "BrokenBellyTest",
   components: {
     Line,
-    requestModal,
     commandList,
     notification: pushNotification,
     LotStepper,
@@ -412,24 +409,22 @@ export default {
         muestra_id: this.last_analysed_id,
       };
 
-      this.$refs.loadingModal.open();
       axios
-        .post(url, data, {
-          headers: { Accept: "application/json" },
-        })
+        .post(url, data, { headers: { Accept: "application/json" } })
         .then(
           () => {
-            this.$refs.loadingModal.success();
+            // Notificación breve; la siguiente acción arranca mientras desaparece
+            this.notify("Added", "success", 1200);
             this.resetTest();
             if (options.startAfter) {
-              this.startTest("manual");
+              setTimeout(() => this.startTest("manual"), 1000);
             } else if (options.navigateTo) {
-              this.$router.push(options.navigateTo);
+              setTimeout(() => this.$router.push(options.navigateTo), 1000);
             }
           },
           (error) => {
             console.log(error);
-            this.$refs.loadingModal.fail();
+            this.notify("Error saving", "error", 3000);
           }
         );
     },

@@ -91,7 +91,7 @@ export default {
         type: "",
         size: "",
         order_no: "",
-        wms_code: "",
+        item_code: "",
       };
     },
     filteredLotList() {
@@ -108,11 +108,11 @@ export default {
       const query = searchString.toLowerCase();
       
       const filtered = this.lotList.filter(lot => {
-        const wmsCode = (lot.wms_code || "").toString().toLowerCase();
+        const itemCode = (lot.item_code || "").toString().toLowerCase();
         const lotNo = (lot.lot_no || "").toString().toLowerCase();
         const supplier = (lot.supplier || "").toString().toLowerCase();
         
-        const matches = wmsCode.includes(query) || 
+        const matches = itemCode.includes(query) || 
                        lotNo.includes(query) || 
                        supplier.includes(query);
         
@@ -135,7 +135,7 @@ export default {
       type: "",
       size: "",
       order_no: "",
-      wms_code: ""
+      item_code: ""
     },
   }),
   props: {

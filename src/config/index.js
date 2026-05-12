@@ -75,7 +75,7 @@ export default {
     z: { name: "ZERO", description: "Zero", shortcut: "z" },
     t: { name: "TARE", description: "Tare", shortcut: "t" },
     b: { name: "BRT", description: "Belly Resistance Test", shortcut: "b" },
-    e: { name: "EXTRA", description: "Extra image", shortcut: "e" },
+    e: { name: "EXTRA", description: "Other Finding", shortcut: "e" },
   },
   url: function () {
     const currentUrl = window.location.href;
