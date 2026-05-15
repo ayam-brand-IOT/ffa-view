@@ -36,15 +36,24 @@
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12" md="6">
-                  <v-text-field
-                    :rules="[required, dateRule]"
-                    v-model="displayDate"
-                    variant="underlined"
-                    label="Production date *"
-                    placeholder="DD/MM/YYYY"
-                    hint="Format: DD/MM/YYYY"
-                    persistent-hint
-                  ></v-text-field>
+                  <v-menu v-model="datePickerMenu" :close-on-content-click="false">
+                    <template #activator="{ props }">
+                      <v-text-field
+                        v-bind="props"
+                        :rules="[required]"
+                        :model-value="displayDate"
+                        variant="underlined"
+                        label="Production date *"
+                        placeholder="DD/MM/YYYY"
+                        readonly
+                        prepend-inner-icon="mdi-calendar"
+                      ></v-text-field>
+                    </template>
+                    <v-date-picker
+                      v-model="pickerDate"
+                      @update:model-value="datePickerMenu = false"
+                    ></v-date-picker>
+                  </v-menu>
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-text-field
@@ -173,6 +182,7 @@ export default {
     formValid: false,
     editing: false,
     add_lot_dialog: false,
+    datePickerMenu: false,
     lot: {
       supplier: null,
       lot_no: null,
@@ -188,12 +198,6 @@ export default {
     required(v) {
       return !!v || "Field is required";
     },
-    dateRule() {
-      return (v) => {
-        if (!v) return true;
-        return /^\d{2}\/\d{2}\/\d{4}$/.test(v) || "Use format DD/MM/YYYY";
-      };
-    },
     url_port: () => config.url_port(),
     url: () => config.url(),
     itemCodes: () => ITEM_CODES,
@@ -207,24 +211,29 @@ export default {
       order_no: null,
       item_code: null,
     }),
-    // Converts between DD/MM/YYYY (display) and YYYY-MM-DD (storage)
-    displayDate: {
+    displayDate() {
+      const d = this.lot.production_date;
+      if (!d) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        const [y, m, day] = d.split("-");
+        return `${day}/${m}/${y}`;
+      }
+      return d;
+    },
+    pickerDate: {
       get() {
         const d = this.lot.production_date;
-        if (!d) return "";
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-          const [y, m, day] = d.split("-");
-          return `${day}/${m}/${y}`;
-        }
-        return d;
+        if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+        const [y, m, day] = d.split("-").map(Number);
+        return new Date(y, m - 1, day);
       },
       set(val) {
-        if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
-          const [day, m, y] = val.split("/");
-          this.lot.production_date = `${y}-${m}-${day}`;
-        } else {
-          this.lot.production_date = val;
-        }
+        if (!val) return;
+        const d = val instanceof Date ? val : new Date(val);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        this.lot.production_date = `${y}-${m}-${day}`;
       },
     },
   },

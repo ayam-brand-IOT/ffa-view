@@ -91,17 +91,17 @@ export default {
   methods: {
     openModal() {
       this.choose_scale = true;
-      // No emit de "pause_net_update": no existe en tu server y no lo tocaremos
+      // No "pause_net_update" emit: not implemented in server
     },
     setScale(scale) {
-      this.args = scale; // "belly" o "weight"
+      this.args = scale; // "belly" | "weight"
       this.step = 0;
       this.step_info = this.calibration_steps[0];
       this.choose_scale = false;
       this.calibrate_dialog = true;
     },
     nextStep() {
-      // Envía el paso actual + 1 (server espera 1..4)
+      // Send current step + 1 (server expects 1..4)
       if (!this.socket_instance) return;
       if (this.args !== "belly" && this.args !== "weight") return;
 
@@ -120,7 +120,7 @@ export default {
       }, 10000);
     },
     cancel() {
-      // Cierra y garantiza salir de modo calibración en el server
+      // Close and ensure calibration mode is exited on the server
       this.step = 0;
       this.choose_scale = false;
       this.calibrate_dialog = false;

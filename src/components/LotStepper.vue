@@ -9,7 +9,7 @@
       <v-stepper-item
         :value="1"
         title="Samples"
-        subtitle="Captura de muestras"
+        subtitle="Sample capture"
         :complete="currentStep > 1"
         color="primary"
       />
@@ -25,7 +25,7 @@
       <v-stepper-item
         :value="3"
         title="Guts Weight"
-        subtitle="Peso de vísceras"
+        subtitle="Viscera weight"
         :complete="currentStep > 3"
         color="primary"
       />

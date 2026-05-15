@@ -103,16 +103,16 @@ import commandList from "@/components/commandList.vue";
 import pushNotification from "@/components/pushNotification.vue";
 import LotStepper from "@/components/LotStepper.vue";
 
-// --- Parámetros de comportamiento (ajústalos en pruebas reales) ---
-const SAMPLE_INTERVAL_MS = 50;      // cada cuánto pedimos tensión
-const AUTO_START_THRESHOLD = 30;    // g sobre la línea base para considerar que ya se jala
-const AUTO_START_SAMPLES = 6;       // 6 samples * 50ms = ~300ms de subida sostenida
-const MIN_PEAK_FOR_BREAK = 80;      // g mínimos que debe alcanzar max_tension antes de buscar ruptura
-                                    // evita falsos positivos durante la colocación inestable del pez
-const BREAK_DROP_PERCENT = 0.50;    // caída del 50% desde el máximo para considerar ruptura
-                                    // (relativo: 20g de ruido en 400g max = 5% → no dispara)
-const BREAK_DESC_SAMPLES = 10;      // 10 * 50ms = 500ms sostenidos por debajo del umbral
-const MAX_TEST_MS = 10000;          // timeout de seguridad de la prueba (10s)
+// --- Behaviour parameters ---
+const SAMPLE_INTERVAL_MS = 50;      // how often we poll tension
+const AUTO_START_THRESHOLD = 30;    // g above baseline to consider pulling has started
+const AUTO_START_SAMPLES = 6;       // 6 samples * 50ms = ~300ms sustained rise
+const MIN_PEAK_FOR_BREAK = 80;      // minimum g max_tension must reach before looking for break
+                                    // avoids false positives during unstable fish placement
+const BREAK_DROP_PERCENT = 0.50;    // 50% drop from peak required to consider a break
+                                    // (relative: 20g noise on 400g peak = 5% → no trigger)
+const BREAK_DESC_SAMPLES = 10;      // 10 * 50ms = 500ms sustained below threshold
+const MAX_TEST_MS = 10000;          // safety timeout (10s)
 
 export default {
   name: "BrokenBellyTest",
@@ -133,13 +133,13 @@ export default {
     stateLabel() {
       switch (this.state) {
         case "idle":
-          return "Esperando";
+          return "Waiting";
         case "arming":
-          return "Detectando tensión";
+          return "Detecting tension";
         case "running":
-          return "Prueba en curso";
+          return "Test running";
         case "finished":
-          return "Prueba terminada";
+          return "Test finished";
         default:
           return this.state;
       }
@@ -171,11 +171,10 @@ export default {
     testIsRunning: false,
     optionsAvailable: false,
 
-    // nuevo
     monitorInterval: null,
     testTimeout: null,
     state: "idle", // idle | arming | running | finished
-    statusMessage: "Esperando que cuelgues el pescado y empieces a jalar...",
+    statusMessage: "Hang the fish and start pulling...",
     autoMode: true,
 
     current_tension: 0,
@@ -243,7 +242,7 @@ export default {
     setTare() {
       this.notify("Tare command sent", "success");
       this.socket_instance.emit("set_tare", true);
-      // reseteamos baseline para recalcular con nuevos valores
+      // reset baseline to recalculate with new values
       this.baseline_tension = null;
     },
 
@@ -252,7 +251,7 @@ export default {
       socket_instance.emit("get_tension", "");
     },
 
-    // monitor siempre activo
+    // monitor always active
     startMonitoring() {
       if (this.monitorInterval) clearInterval(this.monitorInterval);
       this.monitorInterval = setInterval(
@@ -262,7 +261,7 @@ export default {
     },
 
     run_test() {
-      // botón Start/Stop: inicio manual o parada manual
+      // Start/Stop button: manual start or manual stop
       if (this.testIsRunning) {
         this.stopTest("manual-stop");
       } else if (this.state === "finished" && this.break_point > 0) {
@@ -287,8 +286,8 @@ export default {
 
       this.statusMessage =
         origin === "auto"
-          ? "Prueba iniciada automáticamente, sigue jalando hasta que se rompa."
-          : "Prueba iniciada, sigue jalando hasta que se rompa.";
+          ? "Test started automatically — keep pulling until it breaks."
+          : "Test started — keep pulling until it breaks.";
 
       this.notify(
         origin === "auto" ? "Test started (auto)" : "Test started",
@@ -319,8 +318,7 @@ export default {
     resetTest() {
       this.optionsAvailable = false;
       this.state = "idle";
-      this.statusMessage =
-        "Esperando que cuelgues el pescado y empieces a jalar...";
+      this.statusMessage = "Hang the fish and start pulling...";
 
       this.resetValues();
       this.updateChart();
@@ -337,8 +335,8 @@ export default {
       this.state = "idle";
       this.statusMessage =
         reason === "manual-stop"
-          ? "Prueba detenida. Puedes volver a intentarlo."
-          : "Prueba detenida.";
+          ? "Test stopped. You can try again."
+          : "Test stopped.";
 
       this.resetValues();
       this.updateChart();
@@ -347,11 +345,11 @@ export default {
     updateChart() {
       const now = performance.now();
 
-      // no actualices más de 1 vez cada 100ms
+      // throttle to at most once every 100ms
       if (now - this.lastChartUpdate < 100) return;
       this.lastChartUpdate = now;
 
-      // clonar arrays para evitar efectos raros de referencia
+      // clone arrays to avoid stale reference issues
       this.data = [...this.force_data];
       this.labels = [...this.time_data];
 
@@ -388,9 +386,7 @@ export default {
           ? "success"
           : "info";
 
-      this.statusMessage = `Prueba terminada (${reason}). Máxima tensión: ${this.break_point.toFixed(
-        0
-      )} g.`;
+      this.statusMessage = `Test finished (${reason}). Max tension: ${this.break_point.toFixed(0)} g.`;
 
       this.notify(this.statusMessage, type, 2000);
 
@@ -413,7 +409,7 @@ export default {
         .post(url, data, { headers: { Accept: "application/json" } })
         .then(
           () => {
-            // Notificación breve; la siguiente acción arranca mientras desaparece
+            // Brief notification; next action starts as it fades out
             this.notify("Added", "success", 1200);
             this.resetTest();
             if (options.startAfter) {
@@ -436,14 +432,13 @@ export default {
     window.addEventListener("keyup", this.keyboardCatch);
     this.socket_instance.emit("set_tare", true);
 
-    this.statusMessage =
-      "Esperando que cuelgues el pescado y empieces a jalar...";
-    this.startMonitoring(); // <<--- aquí empieza a leer SIEMPRE
+    this.statusMessage = "Hang the fish and start pulling...";
+    this.startMonitoring();
 
     socket_instance.on("tension_update", (tension) => {
       this.current_tension = tension;
 
-      // baseline al principio o después de tare
+      // set baseline on start or after tare
       if (this.baseline_tension === null) {
         this.baseline_tension = tension;
       }
@@ -451,14 +446,14 @@ export default {
       const deltaFromBaseline = tension - this.baseline_tension;
       const isAboveThreshold = deltaFromBaseline > AUTO_START_THRESHOLD;
 
-      // --- AUTO-START: subida sostenida ---
+      // --- AUTO-START: sustained rise ---
       if (this.autoMode && !this.testIsRunning && this.state !== "finished") {
         if (isAboveThreshold) {
           this.risingSamples++;
 
           if (this.state !== "arming") {
             this.state = "arming";
-            this.statusMessage = "Detectando tensión, no sueltes...";
+            this.statusMessage = "Detecting tension — keep pulling...";
           }
 
           if (this.risingSamples >= AUTO_START_SAMPLES) {
@@ -468,13 +463,12 @@ export default {
           this.risingSamples = 0;
           if (this.state === "arming") {
             this.state = "idle";
-            this.statusMessage =
-              "Esperando que cuelgues el pescado y empieces a jalar...";
+            this.statusMessage = "Hang the fish and start pulling...";
           }
         }
       }
 
-      // --- Si la prueba está corriendo, guardamos los datos y buscamos ruptura ---
+      // --- If test is running, record data and check for break ---
       if (this.testIsRunning) {
         if (this.force_data.length === 0) {
           this.start_time = new Date().getTime();
@@ -483,15 +477,15 @@ export default {
         this.force_data.push(tension);
         this.time_data.push(new Date().getTime() - this.start_time);
 
-        // actualizar máximo
+        // update peak
         if (tension > this.max_tension) {
           this.max_tension = tension;
         }
 
-        // Detección de ruptura: porcentual + umbral mínimo de pico.
-        // - Solo buscamos ruptura si max_tension ya alcanzó MIN_PEAK_FOR_BREAK,
-        //   así la inestabilidad al colocar el pez no genera falsos positivos.
-        // - Usamos % en vez de delta fijo: ruido de 20g en un pico de 400g = 5%, no dispara.
+        // Break detection: percentage-based drop + minimum peak threshold.
+        // - Only look for break after max_tension reaches MIN_PEAK_FOR_BREAK,
+        //   so unstable placement noise does not trigger a false positive.
+        // - % drop vs fixed delta: 20g noise on 400g peak = 5% → no trigger.
         const dropFromMax = this.max_tension - tension;
         const dropPercent = this.max_tension > 0 ? dropFromMax / this.max_tension : 0;
         if (this.max_tension >= MIN_PEAK_FOR_BREAK && dropPercent >= BREAK_DROP_PERCENT) {
@@ -507,7 +501,6 @@ export default {
           this.testFinished("tension drop");
         }
 
-        // chart en vivo (si te da lag, se puede bajar la frecuencia)
         this.updateChart();
       }
 

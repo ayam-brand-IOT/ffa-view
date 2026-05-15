@@ -2,7 +2,7 @@
   <div class="image-container" @click="handleClick">
     <img
       :src="`${url_server}video_feed`"
-      alt="Imagen"
+      alt="Image"
       class="background-image"
     />
     <div v-if="points.length === 2" class="square" :style="squareStyle"></div>
@@ -12,7 +12,7 @@
       class="point"
       :style="{ left: point.x + 'px', top: point.y + 'px' }"
     ></div>
-    <!-- Muestra las coordenadas de los puntos en la esquina inferior derecha -->
+    <!-- Shows point coordinates in the bottom-right corner -->
     <div v-if="points.length > 0" class="coordinates">
       <div v-for="(point, index) in points" :key="'coords' + index">
         Point {{ index + 1 }}: X: {{ point.x }}, Y: {{ point.y }}
@@ -27,7 +27,7 @@ import config from "../config";
 export default {
   data() {
     return {
-      points: [], // Almacena las coordenadas de los dos clics
+      points: [], // Stores the coordinates of the two clicks
     };
   },
   computed: {
@@ -50,12 +50,12 @@ export default {
   },
   methods: {
     handleClick(event) {
-      // Calcula las coordenadas relativas al contenedor de la imagen
+      // Calculate coordinates relative to the image container
       const rect = this.$el.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      // Añade el punto o reinicia si ya hay dos puntos
+      // Add point or reset if two points already exist
       if (this.points.length < 2) {
         this.points.push({ x, y });
       } else {
@@ -69,7 +69,7 @@ export default {
   watch: {
     points: {
       handler() {
-        // Emite un evento con las coordenadas de los dos puntos
+        // Emit event with the coordinates of the two points
         if (this.points.length === 2 || this.points.length === 0) {
           this.$emit("onFinish", this.points);
         }
@@ -85,7 +85,7 @@ export default {
   position: relative;
   max-width: 1000px;
   max-height: 650px;
-  cursor: crosshair; /* Cambia el cursor a una cruz para indicar la acción de dibujo */
+  cursor: crosshair;
 }
 
 .background-image {
@@ -98,11 +98,8 @@ export default {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: red; /* Color de los puntos */
-  transform: translate(
-    -50%,
-    -50%
-  ); /* Centra el punto en las coordenadas del clic */
+  background-color: red;
+  transform: translate(-50%, -50%);
 }
 
 .coordinates {
@@ -117,7 +114,7 @@ export default {
 
 .square {
   position: absolute;
-  border: 2px solid red; /* Borde del cuadrado */
-  pointer-events: none; /* Evita que el borde interfiera con eventos de clic */
+  border: 2px solid red;
+  pointer-events: none;
 }
 </style>

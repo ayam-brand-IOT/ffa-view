@@ -26,21 +26,21 @@
       style="bottom: 60px"
       class="position-display"
     >
-      Línea 1: {{ line1Position }} px
+      Line 1: {{ line1Position }} px
     </div>
     <div
       v-if="line2Position !== null"
       class="position-display"
       style="bottom: 100px"
     >
-      Línea 2: {{ line2Position }} px
+      Line 2: {{ line2Position }} px
     </div>
     <div
       v-if="line2Position !== null"
       class="position-display"
       style="left: 15%"
     >
-      Distancia: {{ Math.abs(line2Position - line1Position) }} px
+      Distance: {{ Math.abs(line2Position - line1Position) }} px
     </div>
   </div>
 </template>
@@ -74,7 +74,7 @@ export default {
       }
     },
     handleKeyPress(event) {
-      // La cantidad de píxeles a moverse depende de si Shift está presionado
+      // Move amount depends on whether Shift is held
       const moveAmount = event.shiftKey ? 10 : 1;
 
       switch (event.key) {

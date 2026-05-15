@@ -218,8 +218,8 @@ export default {
       this.weightIsStable = diff < 5 && data > 0;
     });
 
-    // El backend sólo manda weight_update cuando se le pide con update_net,
-    // mismo patrón que HomeView. Sin esto el peso queda en 0.
+    // Backend only sends weight_update when polled with update_net,
+    // same pattern as HomeView. Without this the weight stays at 0.
     this.weightInterval = setInterval(() => {
       socket_instance.emit("update_net", {});
     }, 250);
