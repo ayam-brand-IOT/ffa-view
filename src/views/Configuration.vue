@@ -68,6 +68,24 @@
                 </v-list-item-action>
               </v-list-item>
 
+              <v-list-item>
+                <v-list-item-title>Calibration History</v-list-item-title>
+
+                <v-list-item-subtitle>
+                  View the record of past load cell calibrations
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <v-btn
+                    to="/config/calibration-history"
+                    color="primary"
+                    class="buttons"
+                  >
+                    <v-icon class="mr-1">mdi-history</v-icon>
+                    View
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+
               <!-- <v-list-item>
                 <v-list-item-title>Tare</v-list-item-title>
 
@@ -94,6 +112,33 @@
                   </v-btn>
                 </v-list-item-action>
               </v-list-item> -->
+            </v-list>
+          </v-card-text>
+        </v-card>
+
+        <h3 class="mt-10 mb-3">
+          <v-icon class="mr-2">mdi-clipboard-check</v-icon>
+          Quality Criteria
+        </h3>
+        <v-card elevation="2">
+          <v-card-text>
+            <v-list>
+              <v-list-item>
+                <v-list-item-title>Acceptable Length Ranges</v-list-item-title>
+                <v-list-item-subtitle>
+                  Set min/max accepted length per size (TALL, JITNEY, BUFFET)
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <v-btn
+                    to="/config/size-ranges"
+                    color="primary"
+                    class="buttons"
+                  >
+                    <v-icon class="mr-1">mdi-ruler</v-icon>
+                    Manage
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
             </v-list>
           </v-card-text>
         </v-card>

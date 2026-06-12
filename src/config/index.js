@@ -60,7 +60,7 @@ export default {
     7: { name: "OS", id: 6, shortcut: "7", description: "Other Species Sm" },
     8: { name: "OS2", id: 7, shortcut: "8", description: "Other Species Other" },
     9: { name: "O2", id: 8, shortcut: "9", description: "Oxidation" },
-    0: { name: "FB", id: 9, shortcut: "0", description: "Freezer Burn" },
+    0: { name: "AN", id: 9, shortcut: "0", description: "Anisakis" },
     "-": { name: "OSM", id: 10, shortcut: "-", description: "Off Smell" },
     tab: { name: "ST", id: 14, shortcut: "tab", description: "Spike" },
     shift: { name: "GR", id: 12, shortcut: "shift", description: "Guts and Roes" },

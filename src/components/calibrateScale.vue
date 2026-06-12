@@ -64,6 +64,8 @@
 </template>
 
 <script>
+import axios from "axios";
+import config from "@/config";
 import { mapState } from "vuex";
 import requestModal from "./requestModal.vue";
 
@@ -81,6 +83,8 @@ export default {
   }),
   computed: {
     ...mapState(["socket_instance"]),
+    url_port: () => config.url_port(),
+    url: () => config.url(),
     calibration_steps: () => [
       { message: "Click next to start calibration", icon: "mdi-weight-gram" },
       { message: "Place the empty container on the scale and press OK", icon: "mdi-weight-gram" },
@@ -146,11 +150,19 @@ export default {
 
       this.step++;
       if (this.step >= 4) {
-        // terminado
+        // Calibration finished — record it in the history
+        this.recordCalibration();
         this.resetModal();
       } else {
         this.step_info = this.calibration_steps[this.step];
       }
+    },
+    recordCalibration() {
+      if (this.args !== "belly" && this.args !== "weight") return;
+      const url = `${this.url}:${this.url_port}`;
+      axios
+        .post(`${url}/add-calibration`, { load_cell: this.args })
+        .catch((error) => console.log("Failed to record calibration:", error));
     },
   },
   watch: {
