@@ -86,7 +86,7 @@
                     :rules="[required]"
                     v-model="lot.size"
                     variant="underlined"
-                    :items="['TALL', 'JITNEY', 'BUFFET']"
+                    :items="['TALL', 'BIG_OVAL', 'SMALL_OVAL', 'JITNEY', 'CLUB_CAN', 'BUFFET', 'TOWER']"
                     label="Size*"
                   ></v-select>
                 </v-col>

@@ -101,7 +101,7 @@
 import axios from "axios";
 import config from "@/config";
 
-const SIZE_KEYS = ["TALL", "JITNEY", "BUFFET"];
+const SIZE_KEYS = ["TALL", "BIG_OVAL", "SMALL_OVAL", "JITNEY", "CLUB_CAN", "BUFFET", "TOWER"];
 
 export default {
   name: "SizeRanges",
@@ -109,9 +109,13 @@ export default {
     loading: false,
     sizeKeys: SIZE_KEYS,
     ranges: {
-      TALL:   { length_min: null, length_max: null },
-      JITNEY: { length_min: null, length_max: null },
-      BUFFET: { length_min: null, length_max: null },
+      TALL:       { length_min: null, length_max: null },
+      BIG_OVAL:   { length_min: null, length_max: null },
+      SMALL_OVAL: { length_min: null, length_max: null },
+      JITNEY:     { length_min: null, length_max: null },
+      CLUB_CAN:   { length_min: null, length_max: null },
+      BUFFET:     { length_min: null, length_max: null },
+      TOWER:      { length_min: null, length_max: null },
     },
     snackbar: { show: false, text: "", color: "success" },
   }),

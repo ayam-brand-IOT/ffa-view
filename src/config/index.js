@@ -6,7 +6,9 @@ const DEV_PORT = "3002";
 const PROD_PORT = "3002";
 
 // ENSENADA DEV_URL
+// const DEV_URL = "http://192.168.99.134";
 const DEV_URL = "http://192.168.99.134";
+
 // LOCAL DEV_URL
 // const DEV_URL = "http://127.0.0.1";
 

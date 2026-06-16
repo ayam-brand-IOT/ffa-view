@@ -126,7 +126,7 @@
               <v-list-item>
                 <v-list-item-title>Acceptable Length Ranges</v-list-item-title>
                 <v-list-item-subtitle>
-                  Set min/max accepted length per size (TALL, JITNEY, BUFFET)
+                  Set min/max accepted length per size (TALL, BIG_OVAL, SMALL_OVAL, JITNEY, CLUB_CAN, BUFFET, TOWER)
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
                   <v-btn
