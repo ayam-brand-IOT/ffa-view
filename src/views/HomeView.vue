@@ -51,9 +51,27 @@
           </v-chip>
           <span
             class="text-h6 font-weight-bold"
-            :class="`text-${weightIsStable ? 'green' : 'red'}`"
+            :class="`text-${scale.stable ? 'green' : 'red'}`"
             >{{ live.weight }} g</span
           >
+          <v-chip
+            v-if="scale.faults.length"
+            color="red"
+            size="x-small"
+            variant="flat"
+            class="ml-2"
+          >
+            <v-icon start size="x-small">mdi-alert</v-icon>{{ scale.faults.join(", ") }}
+          </v-chip>
+          <v-chip
+            v-else-if="!scale.ok"
+            color="orange"
+            size="x-small"
+            variant="flat"
+            class="ml-2"
+          >
+            <v-icon start size="x-small">mdi-lan-disconnect</v-icon>NO LINK
+          </v-chip>
         </div>
         <img
           class="the_image elevation-2"
@@ -210,8 +228,14 @@ export default {
     lot: null,
     saveDialog: false,
     to: null,
-    weightIsStable: false,
     isProcessing: false,
+    // Mirrors the transmitter STATUS REGISTER (40007): stability is bit 11,
+    // faults are bits 0-5. No more guessing from consecutive readings.
+    scale: {
+      stable: false,
+      faults: [],
+      ok: true,
+    },
     live: {
       weight: 0,
       indicators: [],
@@ -279,11 +303,12 @@ export default {
       switch (action) {
         case "CAPTURE":
           this.debounceRequested = true;
-          console.log("debounce requested");
-          this.handleWeightChanged(this.live.weight, 0);
+          this.handleWeightChanged(this.live.weight);
           this.timeoutSample = setTimeout(() => {
-            this.debounceRequested = false;
-            console.log("debounce timer cleared");
+            if (this.debounceRequested) {
+              this.debounceRequested = false;
+              this.notify("Weight never stabilized, capture aborted", "error");
+            }
           }, 4000);
           break;
         case "CANCEL":
@@ -509,38 +534,33 @@ export default {
       this.capture();
     },
 
-    handleWeightChanged(newValue, oldValue) {
-      if (!this.debounceRequested) {
-        this.weightIsStable = false;
+    // Stability is whatever the transmitter says (STATUS REGISTER bit 11),
+    // not a 5% comparison between two consecutive samples. Comparing samples
+    // called a slowly drifting reading "stable" and a fast settling one
+    // "unstable", which is backwards.
+    handleWeightChanged(newValue) {
+      if (!this.debounceRequested) return;
+
+      if (this.scale.faults.length) {
+        clearTimeout(this.timeoutSample);
+        this.debounceRequested = false;
+        this.notify(`Scale fault: ${this.scale.faults.join(", ")}`, "error");
         return;
       }
 
-      if (this.debounceTimer) clearTimeout(this.debounceTimer);
-
-      if (newValue == 0) {
-        this.notify("Weight is not stable", "error");
+      if (!this.scale.ok) {
+        clearTimeout(this.timeoutSample);
+        this.debounceRequested = false;
+        this.notify("No reading from the weight transmitter", "error");
         return;
       }
 
-      const difference = (Math.abs(newValue - oldValue) / oldValue) * 100;
+      if (!newValue) return; // nothing on the scale yet, keep waiting
+      if (!this.scale.stable) return; // still settling, timeoutSample gives up
 
-      if (difference < 5) {
-        if (this.timeoutSample) {
-          clearTimeout(this.timeoutSample);
-          this.debounceRequested = false;
-        }
-        this.weightIsStable = true;
-        this.handleHasBeenDebounced(newValue);
-      } else {
-        this.debounceTimer = setTimeout(() => {
-          if (this.timeoutSample) {
-            clearTimeout(this.timeoutSample);
-            this.debounceRequested = false;
-          }
-          this.weightIsStable = true;
-          this.handleHasBeenDebounced(newValue);
-        }, 1000);
-      }
+      clearTimeout(this.timeoutSample);
+      this.debounceRequested = false;
+      this.handleHasBeenDebounced(newValue);
     },
   },
 
@@ -576,11 +596,32 @@ export default {
 
     const { socket_instance } = this;
 
-    socket_instance.emit("set_tare", {});
+    // NO automatic set_tare here. Semi-automatic tare makes whatever sits on
+    // the scale at that instant the new zero, so taring on every mount was
+    // taring out fish, water and ice and looked like the scale losing its
+    // calibration. The operator tares explicitly, with the scale empty.
     socket_instance.emit("enter_to_weight_mode", {});
 
     socket_instance.on("weight_update", (data) => {
       this.live.weight = data;
+    });
+
+    socket_instance.on("scale_status", (status) => {
+      this.scale.stable = status.stable;
+      this.scale.ok = status.ok;
+      this.scale.faults = status.faults || [];
+
+      // A settled weight stops changing, so the live.weight watcher never
+      // fires while it is stable. Re-evaluate the pending capture here too.
+      this.handleWeightChanged(this.live.weight);
+    });
+
+    socket_instance.on("scale_error", (payload) => {
+      this.scale.ok = false;
+      this.scale.stable = false;
+      if (payload.consecutive === 1) {
+        this.notify("Lost communication with the weight transmitter", "error");
+      }
     });
 
     socket_instance.on("analysis_data", (data) => {
@@ -600,10 +641,12 @@ export default {
   beforeUnmount() {
     window.removeEventListener("keyup", this.keyboardCatch);
     this.socket_instance.off("weight_update");
+    this.socket_instance.off("scale_status");
+    this.socket_instance.off("scale_error");
     this.socket_instance.off("analysis_data");
     this.socket_instance.off("frame_ready");
     if (this.interval) clearInterval(this.interval);
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (this.timeoutSample) clearTimeout(this.timeoutSample);
   },
 
   watch: {
@@ -617,10 +660,9 @@ export default {
       deep: true,
     },
     "live.weight": {
-      handler: function (newValue, oldValue) {
-        this.handleWeightChanged(newValue, oldValue);
+      handler: function (newValue) {
+        this.handleWeightChanged(newValue);
       },
-      deep: true,
     },
   },
 };

@@ -251,7 +251,9 @@ export default {
       socket_instance.emit("get_tension", "");
     },
 
-    // monitor always active
+    // The server poller pushes tension_update at TENSION_POLL_INTERVAL once
+    // enter_to_tension_test has been sent, so no client-side interval is
+    // needed. Kept as a manual fallback if the push ever stalls.
     startMonitoring() {
       if (this.monitorInterval) clearInterval(this.monitorInterval);
       this.monitorInterval = setInterval(
@@ -430,10 +432,14 @@ export default {
     const { socket_instance } = this;
 
     window.addEventListener("keyup", this.keyboardCatch);
-    this.socket_instance.emit("set_tare", true);
 
-    this.statusMessage = "Hang the fish and start pulling...";
-    this.startMonitoring();
+    // Puts the server poller on the belly transmitter, so tension is pushed
+    // instead of being pulled by our own interval.
+    socket_instance.emit("enter_to_tension_test", {});
+
+    // Tare is deliberate here too: the fish is already hanging when the
+    // operator opens this view, and taring it out zeroed the pull.
+    this.statusMessage = "Hang the fish, tare, and start pulling...";
 
     socket_instance.on("tension_update", (tension) => {
       this.current_tension = tension;
@@ -510,7 +516,11 @@ export default {
 
   beforeUnmount() {
     window.removeEventListener("keyup", this.keyboardCatch);
+    // Hand the server poller back to the weight transmitter, otherwise it
+    // keeps hammering the belly slave for the rest of the session.
+    this.socket_instance.emit("enter_to_weight_mode", {});
     this.socket_instance.off("tension_update");
+    this.socket_instance.off("scale_error");
     if (this.monitorInterval) clearInterval(this.monitorInterval);
     if (this.testTimeout) clearTimeout(this.testTimeout);
   },

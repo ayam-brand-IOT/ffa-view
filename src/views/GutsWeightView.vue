@@ -210,22 +210,28 @@ export default {
     socket_instance.emit("enter_to_weight_mode", {});
 
     socket_instance.on("weight_update", (data) => {
-      const prev = this.liveWeight;
       this.liveWeight = data;
-      const diff = prev > 0
-        ? (Math.abs(data - prev) / prev) * 100
-        : 100;
-      this.weightIsStable = diff < 5 && data > 0;
     });
 
-    // Backend only sends weight_update when polled with update_net,
-    // same pattern as HomeView. Without this the weight stays at 0.
-    this.weightInterval = setInterval(() => {
-      socket_instance.emit("update_net", {});
-    }, 250);
+    // Stability comes from the transmitter STATUS REGISTER (bit 11) instead
+    // of comparing consecutive readings: a slow drift passed the old 5% test
+    // while a fast, genuinely settled reading failed it.
+    socket_instance.on("scale_status", (status) => {
+      this.weightIsStable = status.stable && status.ok && !status.faults.length;
+    });
+
+    socket_instance.on("scale_error", () => {
+      this.weightIsStable = false;
+    });
+
+    // The server now pushes readings on its own; this poll only covers the
+    // gap before the first push arrives.
+    socket_instance.emit("update_net", {});
   },
   beforeUnmount() {
     this.socket_instance.off("weight_update");
+    this.socket_instance.off("scale_status");
+    this.socket_instance.off("scale_error");
     if (this.weightInterval) clearInterval(this.weightInterval);
   },
 };
