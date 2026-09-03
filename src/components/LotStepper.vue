@@ -1,10 +1,5 @@
 <template>
-  <v-stepper
-    :model-value="currentStep"
-    flat
-    class="lot-stepper"
-    alt-labels
-  >
+  <v-stepper :model-value="currentStep" flat class="lot-stepper" alt-labels>
     <v-stepper-header>
       <v-stepper-item
         :value="1"
@@ -24,9 +19,17 @@
       <v-divider />
       <v-stepper-item
         :value="3"
+        title="Anisakis"
+        subtitle="Parasite check"
+        :complete="currentStep > 3"
+        color="primary"
+      />
+      <v-divider />
+      <v-stepper-item
+        :value="4"
         title="Guts Weight"
         subtitle="Viscera weight"
-        :complete="currentStep > 3"
+        :complete="currentStep > 4"
         color="primary"
       />
     </v-stepper-header>
@@ -36,12 +39,7 @@
 <script>
 export default {
   name: "LotStepper",
-  props: {
-    currentStep: {
-      type: Number,
-      default: 1,
-    },
-  },
+  props: { currentStep: { type: Number, default: 1 } },
 };
 </script>
 

@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="d-flex flex-column" style="height: 100%">
-    <lot-stepper :current-step="3" />
+    <lot-stepper :current-step="4" />
 
     <div class="d-flex align-baseline mt-2">
       <h3 class="mb-3 ml-4">Lot #:</h3>
@@ -84,9 +84,9 @@
     </v-row>
 
     <div class="d-flex justify-space-between mt-4 px-4 pb-4">
-      <v-btn variant="text" color="grey" @click="$router.push('/broken-belly-test')">
+      <v-btn variant="text" color="grey" @click="$router.push('/anisakis')">
         <v-icon start>mdi-arrow-left</v-icon>
-        Back: BRT
+        Back: Anisakis
       </v-btn>
       <v-btn color="success" size="x-large" @click="finishLot">
         <v-icon start>mdi-check-all</v-icon>

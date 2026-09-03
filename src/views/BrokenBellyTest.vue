@@ -75,8 +75,8 @@
         <v-icon start>mdi-arrow-left</v-icon>
         Back: Samples
       </v-btn>
-      <v-btn color="primary" size="x-large" @click="goToGutsWeight">
-        Next: Guts Weight
+      <v-btn color="primary" size="x-large" @click="goToAnisakis">
+        Next: Anisakis
         <v-icon end>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
@@ -193,11 +193,11 @@ export default {
     lastChartUpdate: 0,
   }),
   methods: {
-    goToGutsWeight() {
+    goToAnisakis() {
       if (this.state === "finished" && this.break_point > 0) {
-        this.saveData({ navigateTo: "/guts-weight" });
+        this.saveData({ navigateTo: "/anisakis" });
       } else {
-        this.$router.push("/guts-weight");
+        this.$router.push("/anisakis");
       }
     },
     evokeAction(action) {

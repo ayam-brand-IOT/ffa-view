@@ -43,6 +43,12 @@ const routes = [
       ),
   },
   {
+    path: "/anisakis",
+    name: "Anisakis",
+    component: () =>
+      import(/* webpackChunkName: "anisakis" */ "../views/AnisakisView.vue"),
+  },
+  {
     path: "/guts-weight",
     name: "Guts Weight",
     component: () =>
