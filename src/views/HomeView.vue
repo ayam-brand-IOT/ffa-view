@@ -578,7 +578,9 @@ export default {
     var { defects } = config;
 
     window.addEventListener("keyup", this.keyboardCatch);
-    this.interval = setInterval(this.updateNet, 250);
+    // The backend poller pushes weight_update/scale_status on its own. A
+    // client-side 250 ms update_net loop only duplicated those messages and,
+    // with an empty cache, added Modbus reads competing with the poller.
 
     Object.keys(defects).forEach((value) => {
       const { name, id } = defects[value];
@@ -601,6 +603,7 @@ export default {
     // taring out fish, water and ice and looked like the scale losing its
     // calibration. The operator tares explicitly, with the scale empty.
     socket_instance.emit("enter_to_weight_mode", {});
+    this.updateNet(); // show the cached reading immediately
 
     socket_instance.on("weight_update", (data) => {
       this.live.weight = data;
@@ -645,7 +648,6 @@ export default {
     this.socket_instance.off("scale_error");
     this.socket_instance.off("analysis_data");
     this.socket_instance.off("frame_ready");
-    if (this.interval) clearInterval(this.interval);
     if (this.timeoutSample) clearTimeout(this.timeoutSample);
   },
 
