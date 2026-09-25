@@ -39,6 +39,10 @@
         <v-card-text v-if="error" role="alert">
           <v-alert type="error" variant="tonal">{{ error }}</v-alert>
         </v-card-text>
+        <v-card-text v-if="failed && tareActive">
+          The transmitter is showing NET weight (tare enabled, possibly from its keypad).
+          Disable the tare to show GROSS weight, then start the calibration again.
+        </v-card-text>
         <v-card-text v-if="historyError" role="alert">
           <v-alert type="warning" variant="tonal">{{ historyError }}</v-alert>
         </v-card-text>
@@ -52,6 +56,15 @@
             {{ failed || step === 4 ? "Close" : busy ? "Stop waiting" : "Cancel" }}
           </v-btn>
           <v-spacer></v-spacer>
+          <v-btn
+            v-if="failed && tareActive"
+            :disabled="!socket_instance?.connected || outcomeUnknown"
+            color="primary"
+            text
+            @click="disableTare"
+          >
+            Disable tare
+          </v-btn>
           <v-btn
             v-if="!failed && step < 4"
             :disabled="busy || !socket_instance?.connected"
@@ -98,6 +111,7 @@ export default {
     error: "",
     historyError: "",
     failed: false,
+    tareActive: false,
     sessionActive: false,
     pending: null,
     abandonedRequest: null,
@@ -130,6 +144,7 @@ export default {
       this.error = "";
       this.historyError = "";
       this.failed = false;
+      this.tareActive = false;
       this.choose_scale = false;
       this.calibrate_dialog = true;
     },
@@ -152,6 +167,13 @@ export default {
         this._fail("No confirmation received. The operation may still be running. Check the transmitter and server before restarting; applied changes are not undone.", true);
       }, 30000);
       this.socket_instance.emit("calibrate_load_cell", { ...this.pending });
+    },
+    // Explicit operator action only: command 9 (semi-automatic tare disabling)
+    // is never sent automatically by a calibration step.
+    disableTare() {
+      if (!this.failed || !this.tareActive || this.outcomeUnknown || !this.socket_instance?.connected) return;
+      this.socket_instance.emit("clear_tare", this.args === "belly");
+      this.setScale(this.args);
     },
     cancel() {
       if (this.pending) {
@@ -209,6 +231,7 @@ export default {
       if (this._settleAbandoned(data) || !this._matches(data)) return;
       const warning = data.step >= 2 ? " Applied changes are not undone. Check the transmitter before restarting." : "";
       this._fail((data.error || "Calibration failed.") + warning);
+      this.tareActive = /^Active tare/.test(data.error || "");
     },
     _onCalibExpired() {
       if (!this.sessionActive) return;

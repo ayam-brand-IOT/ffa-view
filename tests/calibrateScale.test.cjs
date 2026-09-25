@@ -264,3 +264,27 @@ test("closing a failed session allows an explicit new session and ignores old AC
   assert.equal(f.ui.pending.args, "belly");
   assert.equal(f.ui.failed, false);
 });
+
+test("active tare error offers an explicit tare disable and a fresh start", () => {
+  const f = fixture();
+  f.ui.nextStep();
+  f.ui._onCalibError({ ...f.ui.pending, error: "Active tare or NET/GROSS mismatch: gross=218.0, net=218.0. No automatic tare reset was performed" });
+  assert.equal(f.ui.tareActive, true);
+  assert.equal(f.ui.socket_instance.sent.some((m) => m.event === "clear_tare"), false);
+
+  f.ui.disableTare();
+  assert.deepEqual(f.ui.socket_instance.sent.filter((m) => m.event === "clear_tare"), [{ event: "clear_tare", data: false }]);
+  assert.equal(f.ui.failed, false);
+  assert.equal(f.ui.tareActive, false);
+  assert.equal(f.ui.step, 0);
+  assert.equal(f.ui.socket_instance.sent.filter((m) => m.event === "calibrate_load_cell").length, 1);
+});
+
+test("other errors do not offer tare disabling", () => {
+  const f = fixture();
+  f.ui.nextStep();
+  f.ui._onCalibError({ ...f.ui.pending, error: "weight never stabilised" });
+  assert.equal(f.ui.tareActive, false);
+  f.ui.disableTare();
+  assert.equal(f.ui.socket_instance.sent.some((m) => m.event === "clear_tare"), false);
+});
