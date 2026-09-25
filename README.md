@@ -157,3 +157,63 @@ Cuando la UI se va a servir desde la Raspberry o desde el equipo de operacion:
 - no hay script de tests en `package.json`
 - la configuracion de desarrollo esta hardcodeada
 - varias vistas asumen que `ffa-app` y `ffa-server` estan disponibles y no usan capa de env moderna
+
+## Load Cell Calibration Feedback
+
+The calibration dialog at `/config` requires the diagnostic backend that echoes
+`request_id`, `step`, and `args` in `calibration_step_commited` and
+`calibration_error`. Older uncorrelated replies are not accepted as success.
+
+- Backend rejections remain visible in the dialog instead of leaving a spinner open.
+- Each step has a unique request ID. Duplicate, unrelated, or late replies cannot
+  advance the wizard or create a second history entry.
+- The reference step is not completion: only a confirmed step 4 shows that the
+  transmitter saved and verified the calibration. History recording errors are
+  reported separately.
+- Disconnects, session expiry, and a 30-second response timeout stop the wizard.
+  No calibration command is retried automatically or queued while disconnected.
+- Stopping while a request is pending does not roll back transmitter changes.
+  Another calibration is disabled until that request receives a terminal reply.
+  If no reply arrives, inspect the transmitter and server before reloading.
+- Socket listeners follow late initialization and replacement, and are removed
+  when leaving the page. Cancellation releases the client's calibration session.
+
+`TLB_STATUS_MAP_VERIFIED=false` intentionally blocks guided calibration in the
+diagnostic backend. This frontend fix does not change that flag or validate the
+firmware status map. Do not enable it simply to dismiss the error. The previous
+bench result of 999.0 g after a power cycle, against a nominal 1000 g reference,
+remains outside the diagnostic +/-0.5 g acceptance check. The bottle used was not
+a certified reference weight, so these checks do not establish physical accuracy.
+
+Run the isolated component regression tests (mock socket and clock, no hardware):
+
+```bash
+node --test tests/calibrateScale.test.cjs
+npm run build
+```
+
+### Debug Station Rollout (2026-09-25)
+
+The compiled UI was copied into `/app/dist` in the existing `ffa-app` container
+on `raspberry.local:3030`. The container was restarted to invalidate Flask's
+cached HTML template. Existing hashed assets were retained for already-open tabs.
+`ffa-server` and the transmitter configuration were not changed.
+
+Backup and build archive on the debug station:
+`/home/pi/ffa-debug-backups/ui-feedback-20260925.79TmwA/`.
+`dist-before` contains the previous UI; `dist-new` contains this build.
+
+This is a running-container update, not a rebuilt Docker image. Recreating the
+container from its current image will restore the old UI. Include the frontend
+build in the next image before promoting it elsewhere.
+
+To restore the previous UI on this debug station:
+
+```bash
+docker cp /home/pi/ffa-debug-backups/ui-feedback-20260925.79TmwA/dist-before/. ffa-app:/app/dist/
+docker restart ffa-app
+```
+
+The local build and deployed files matched SHA-256 checksums. Browser checks use
+a mocked socket with the real Socket.IO connection blocked; they do not validate
+physical calibration or authorize enabling the firmware-status gate.

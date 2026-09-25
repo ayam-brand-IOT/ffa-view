@@ -33,14 +33,28 @@
 
     <v-dialog v-model="calibrate_dialog" persistent max-width="600px">
       <v-card>
-        <v-card-title>
-          <span class="headline">{{ step_info.message }}</span>
+        <v-card-title class="calibration-title">
+          <span class="headline">{{ failed ? "Calibration stopped" : step_info.message }}</span>
         </v-card-title>
+        <v-card-text v-if="error" role="alert">
+          <v-alert type="error" variant="tonal">{{ error }}</v-alert>
+        </v-card-text>
+        <v-card-text v-if="historyError" role="alert">
+          <v-alert type="warning" variant="tonal">{{ historyError }}</v-alert>
+        </v-card-text>
+        <v-card-text v-if="busy" role="status">Waiting for the transmitter...</v-card-text>
+        <v-card-text v-else-if="!socket_instance?.connected && !failed" role="status">Server disconnected. Calibration is unavailable.</v-card-text>
+        <v-card-text v-if="step >= 2 && step < 4 && !failed">
+          Cancelling ends this session but does not undo changes already applied to the transmitter.
+        </v-card-text>
         <v-card-actions>
-          <v-btn color="red" text @click="cancel()"> Cancel </v-btn>
+          <v-btn color="red" text @click="cancel()">
+            {{ failed || step === 4 ? "Close" : busy ? "Stop waiting" : "Cancel" }}
+          </v-btn>
           <v-spacer></v-spacer>
           <v-btn
-            :disabled="busy"
+            v-if="!failed && step < 4"
+            :disabled="busy || !socket_instance?.connected"
             :loading="busy"
             :color="step < 3 ? 'primary' : 'green'"
             text
@@ -55,8 +69,10 @@
       </v-card>
     </v-dialog>
 
-    <request-modal ref="loadingModal" />
-    <v-btn @click="openModal" color="primary" class="buttons">
+    <v-alert v-if="outcomeUnknown && !calibrate_dialog" type="warning" variant="tonal" class="mb-3" role="alert">
+      The previous operation is unconfirmed. Check the transmitter and server before reloading to start another calibration. Stopping does not undo applied changes.
+    </v-alert>
+    <v-btn @click="openModal" :disabled="outcomeUnknown" color="primary" class="buttons">
       <v-icon class="mr-1">mdi-weight-gram</v-icon>
       Calibrate
     </v-btn>
@@ -67,11 +83,11 @@
 import axios from "axios";
 import config from "@/config";
 import { mapState } from "vuex";
-import requestModal from "./requestModal.vue";
+
+let requestSequence = 0;
 
 export default {
   name: "calibrateScale",
-  components: { requestModal },
   data: () => ({
     calibrate_dialog: false,
     choose_scale: false,
@@ -79,7 +95,13 @@ export default {
     args: null, // "belly" | "weight"
     responseTimeOut: null,
     busy: false,
-    step_info: { message: "", icon: "" },
+    error: "",
+    historyError: "",
+    failed: false,
+    sessionActive: false,
+    pending: null,
+    abandonedRequest: null,
+    outcomeUnknown: false,
   }),
   computed: {
     ...mapState(["socket_instance"]),
@@ -87,105 +109,162 @@ export default {
     url: () => config.url(),
     calibration_steps: () => [
       { message: "Click next to start calibration", icon: "mdi-weight-gram" },
-      { message: "Place the empty container on the scale and press OK", icon: "mdi-weight-gram" },
-      { message: "Place the container with 1kg on the scale and press OK", icon: "mdi-weight-gram" },
-      { message: "Calibration complete", icon: "mdi-check" },
+      { message: "Leave only the permanent fixture on the scale, wait for stability, then select Next", icon: "mdi-weight-gram" },
+      { message: "Add the 1000 g reference weight, wait for stability, then select Next", icon: "mdi-weight-gram" },
+      { message: "Reference accepted. Keep the weight in place and select Save", icon: "mdi-weight-gram" },
+      { message: "Calibration saved and verified", icon: "mdi-check" },
     ],
+    step_info() {
+      return this.calibration_steps[this.step];
+    },
   },
   methods: {
     openModal() {
+      if (this.outcomeUnknown) return;
       this.choose_scale = true;
-      // No "pause_net_update" emit: not implemented in server
     },
     setScale(scale) {
+      if (this.outcomeUnknown || this.busy) return;
       this.args = scale; // "belly" | "weight"
       this.step = 0;
-      this.step_info = this.calibration_steps[0];
+      this.error = "";
+      this.historyError = "";
+      this.failed = false;
       this.choose_scale = false;
       this.calibrate_dialog = true;
     },
     nextStep() {
-      // Send current step + 1 (server expects 1..4)
-      if (!this.socket_instance) return;
+      if (this.busy || this.failed || this.outcomeUnknown || !this.calibrate_dialog || this.step >= 4) return;
       if (this.args !== "belly" && this.args !== "weight") return;
-
+      if (!this.socket_instance?.connected) {
+        this._fail("Not connected to the server. Reconnect before starting a new calibration.");
+        return;
+      }
       this.busy = true;
-      this.$refs.loadingModal.open();
-
-      this.socket_instance.emit("calibrate_load_cell", {
+      this.sessionActive = true;
+      this.pending = {
         step: this.step + 1,
         args: this.args,
-      });
-
+        request_id: `${Date.now()}-${++requestSequence}-${Math.random().toString(36).slice(2)}`,
+      };
       clearTimeout(this.responseTimeOut);
       this.responseTimeOut = setTimeout(() => {
-        this.$refs.loadingModal.fail();
-        this.busy = false;
-      }, 10000);
+        this._fail("No confirmation received. The operation may still be running. Check the transmitter and server before restarting; applied changes are not undone.", true);
+      }, 30000);
+      this.socket_instance.emit("calibrate_load_cell", { ...this.pending });
     },
     cancel() {
-      // Close and ensure calibration mode is exited on the server
-      this.step = 0;
+      if (this.pending) {
+        this.abandonedRequest = this.pending;
+        this.outcomeUnknown = true;
+      }
+      this._clearPending();
+      this._releaseSession();
       this.choose_scale = false;
       this.calibrate_dialog = false;
-      this.busy = false;
-      clearTimeout(this.responseTimeOut);
-      if (this.socket_instance) {
-        this.socket_instance.emit("resume_net_update"); // tu server la soporta
-      }
-      this.$refs.loadingModal?.close?.();
     },
-    resetModal() {
-      this.step = 0;
-      this.calibrate_dialog = false;
-      this.busy = false;
-      if (this.socket_instance) {
-        this.socket_instance.emit("resume_net_update");
-      }
-    },
-    _onCalibAck() {
+    _clearPending() {
       clearTimeout(this.responseTimeOut);
-      this.$refs.loadingModal.close();
+      this.responseTimeOut = null;
+      this.pending = null;
       this.busy = false;
-
-      this.step++;
-      if (this.step >= 4) {
-        // Calibration finished — record it in the history
+    },
+    _releaseSession(socket = this.socket_instance) {
+      if (this.sessionActive && socket?.connected) {
+        socket.emit("resume_net_update");
+      }
+      this.sessionActive = false;
+    },
+    _matches(data, request = this.pending) {
+      return Boolean(request && data && data.request_id === request.request_id
+        && data.step === request.step && data.args === request.args);
+    },
+    _settleAbandoned(data) {
+      if (!this._matches(data, this.abandonedRequest)) return false;
+      this.abandonedRequest = null;
+      this.outcomeUnknown = false;
+      this.error = "The previous operation has ended. Check the transmitter before starting a new calibration; applied changes were not undone.";
+      return true;
+    },
+    _fail(message, uncertain = false) {
+      if (uncertain && this.pending) {
+        this.abandonedRequest = this.pending;
+        this.outcomeUnknown = true;
+      }
+      this._clearPending();
+      this._releaseSession();
+      this.error = message;
+      this.failed = true;
+    },
+    _onCalibAck(data) {
+      if (this._settleAbandoned(data) || !this._matches(data)) return;
+      this.step = data.step;
+      this._clearPending();
+      if (this.step === 4) {
+        this.sessionActive = false;
         this.recordCalibration();
-        this.resetModal();
-      } else {
-        this.step_info = this.calibration_steps[this.step];
       }
+    },
+    _onCalibError(data) {
+      if (this._settleAbandoned(data) || !this._matches(data)) return;
+      const warning = data.step >= 2 ? " Applied changes are not undone. Check the transmitter before restarting." : "";
+      this._fail((data.error || "Calibration failed.") + warning);
+    },
+    _onCalibExpired() {
+      if (!this.sessionActive) return;
+      this._fail("Calibration session expired. Check the transmitter before starting again; applied changes are not undone.", Boolean(this.pending));
+    },
+    _onDisconnect() {
+      if (!this.sessionActive) return;
+      this._fail("Connection lost. Check the transmitter and server before starting again; applied changes are not undone.", Boolean(this.pending));
+    },
+    _bindSocket(socket, bind) {
+      if (!socket) return;
+      const method = bind ? "on" : "off";
+      socket[method]("calibration_step_commited", this._onCalibAck);
+      socket[method]("calibration_error", this._onCalibError);
+      socket[method]("calibration_expired", this._onCalibExpired);
+      socket[method]("disconnect", this._onDisconnect);
     },
     recordCalibration() {
       if (this.args !== "belly" && this.args !== "weight") return;
       const url = `${this.url}:${this.url_port}`;
+      const recordedRequest = requestSequence;
       axios
         .post(`${url}/add-calibration`, { load_cell: this.args })
-        .catch((error) => console.log("Failed to record calibration:", error));
+        .catch(() => {
+          if (this.step === 4 && recordedRequest === requestSequence) {
+            this.historyError = "Calibration was saved on the transmitter, but its history entry could not be recorded.";
+          }
+        });
     },
   },
   watch: {
-    step(newStep) {
-      this.step_info = this.calibration_steps[newStep];
+    socket_instance: {
+      immediate: true,
+      handler(socket, previous) {
+        this._bindSocket(previous, false);
+        if (previous && this.sessionActive) {
+          this._releaseSession(previous);
+          this._fail("Server connection changed. Check the transmitter before starting again; applied changes are not undone.", Boolean(this.pending));
+        }
+        this._bindSocket(socket, true);
+      },
     },
   },
-  mounted() {
-    this.step_info = this.calibration_steps[0];
-
-    if (this.socket_instance) {
-      this.socket_instance.on("calibration_step_commited", this._onCalibAck);
-    }
-  },
-  unmounted() { // Vue 3
-    if (this.socket_instance) {
-      this.socket_instance.off("calibration_step_commited", this._onCalibAck);
-    }
+  beforeUnmount() {
+    this._clearPending();
+    this._releaseSession();
+    this._bindSocket(this.socket_instance, false);
   },
 };
 </script>
 
 <style lang="scss" scoped>
+.calibration-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .weight-cards{
   width: 180px;
   height: 200px;
