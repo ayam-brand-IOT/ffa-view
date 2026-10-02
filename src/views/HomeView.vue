@@ -235,6 +235,10 @@ export default {
       stable: false,
       faults: [],
       ok: true,
+      // Confirmed by the backend (scale_ready.py): several stable readings
+      // agreeing within a division. The buzzer beeps on this same value.
+      ready: false,
+      readyValue: null,
     },
     live: {
       weight: 0,
@@ -295,6 +299,10 @@ export default {
       this.$refs.commandList.open();
     },
 
+    armReadyBeep() {
+      this.socket_instance.emit("arm_ready_beep", {});
+    },
+
     updateNet() {
       this.socket_instance.emit("update_net", {});
     },
@@ -303,7 +311,7 @@ export default {
       switch (action) {
         case "CAPTURE":
           this.debounceRequested = true;
-          this.handleWeightChanged(this.live.weight);
+          this.handleWeightChanged();
           this.timeoutSample = setTimeout(() => {
             if (this.debounceRequested) {
               this.debounceRequested = false;
@@ -413,10 +421,11 @@ export default {
       this.$router.push("/broken-belly-test");
     },
 
-    capture() {
+    capture(weight) {
       if (this.analyzed_image) this.saveData();
       this.notify("Image captured", "success");
       this.captured = JSON.parse(JSON.stringify(this.live));
+      if (weight != null) this.captured.weight = weight;
       this.putData("capture", {});
       this.capture_state = !this.capture_state;
       this.isProcessing = true;
@@ -529,16 +538,17 @@ export default {
       previewModal.open();
     },
 
-    handleHasBeenDebounced() {
+    handleHasBeenDebounced(weight) {
       this.debounceRequested = false;
-      this.capture();
+      this.capture(weight);
     },
 
     // Stability is whatever the transmitter says (STATUS REGISTER bit 11),
-    // not a 5% comparison between two consecutive samples. Comparing samples
-    // called a slowly drifting reading "stable" and a fast settling one
-    // "unstable", which is backwards.
-    handleWeightChanged(newValue) {
+    // confirmed by the backend over several readings (scale.ready), not a 5%
+    // comparison between two consecutive samples. Only scale_status calls
+    // this: pairing a newer weight_update with the previous status captured
+    // a still-settling weight (980 g while the transmitter showed 1000 g).
+    handleWeightChanged() {
       if (!this.debounceRequested) return;
 
       if (this.scale.faults.length) {
@@ -555,12 +565,12 @@ export default {
         return;
       }
 
-      if (!newValue) return; // nothing on the scale yet, keep waiting
-      if (!this.scale.stable) return; // still settling, timeoutSample gives up
+      // Empty or still settling: keep waiting, timeoutSample gives up.
+      if (!this.scale.ready || this.scale.readyValue == null) return;
 
       clearTimeout(this.timeoutSample);
       this.debounceRequested = false;
-      this.handleHasBeenDebounced(newValue);
+      this.handleHasBeenDebounced(this.scale.readyValue);
     },
   },
 
@@ -603,6 +613,9 @@ export default {
     // taring out fish, water and ice and looked like the scale losing its
     // calibration. The operator tares explicitly, with the scale empty.
     socket_instance.emit("enter_to_weight_mode", {});
+    // Arming is per Socket.IO session: re-arm after a reconnect.
+    socket_instance.emit("arm_ready_beep", {});
+    socket_instance.on("connect", this.armReadyBeep);
     this.updateNet(); // show the cached reading immediately
 
     socket_instance.on("weight_update", (data) => {
@@ -613,15 +626,15 @@ export default {
       this.scale.stable = status.stable;
       this.scale.ok = status.ok;
       this.scale.faults = status.faults || [];
-
-      // A settled weight stops changing, so the live.weight watcher never
-      // fires while it is stable. Re-evaluate the pending capture here too.
-      this.handleWeightChanged(this.live.weight);
+      this.scale.ready = Boolean(status.ready);
+      this.scale.readyValue = status.ready_value ?? null;
+      this.handleWeightChanged();
     });
 
     socket_instance.on("scale_error", (payload) => {
       this.scale.ok = false;
       this.scale.stable = false;
+      this.scale.ready = false;
       if (payload.consecutive === 1) {
         this.notify("Lost communication with the weight transmitter", "error");
       }
@@ -643,6 +656,8 @@ export default {
 
   beforeUnmount() {
     window.removeEventListener("keyup", this.keyboardCatch);
+    this.socket_instance.off("connect", this.armReadyBeep);
+    this.socket_instance.emit("disarm_ready_beep", {});
     this.socket_instance.off("weight_update");
     this.socket_instance.off("scale_status");
     this.socket_instance.off("scale_error");
@@ -660,11 +675,6 @@ export default {
         this.socket_instance.emit("set_fish_data", { fish_species, type });
       },
       deep: true,
-    },
-    "live.weight": {
-      handler: function (newValue) {
-        this.handleWeightChanged(newValue);
-      },
     },
   },
 };
