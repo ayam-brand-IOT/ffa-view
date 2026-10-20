@@ -70,6 +70,14 @@ body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
 .side li a.on .n { color: #6aa8ea; }
 .side li a:focus-visible { outline: 2px solid #6aa8ea; outline-offset: -2px; }
 .side .sup a .n { color: #d98b62; }
+/* way back to the station app */
+.back {
+  display: flex; align-items: center; gap: 8px; margin: 0 16px; padding: 10px 14px; border-radius: 8px;
+  background: var(--accent); color: var(--accent-ink); text-decoration: none; font: 600 15px var(--body);
+}
+.back:hover { filter: brightness(1.1); }
+.back:focus-visible { outline: 2px solid var(--side-hi); outline-offset: 2px; }
+.topbar .back { margin: 0; padding: 6px 10px; font-size: 14px; }
 .side .foot { margin-top: auto; padding: 0 24px; font-size: 12px; color: #6f8797; }
 
 /* topics: sub-entries of the section in view (or the one clicked) */
@@ -274,9 +282,10 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
 </head>
 <body>
 
-<div class="topbar"><button type="button" id="menuBtn" aria-controls="side" aria-expanded="false">Index</button><b>FFA Station Manual</b><button type="button" id="searchBtn" class="sbtn">Search</button></div>
+<div class="topbar"><a class="back" href="/" data-back>&larr; App</a><button type="button" id="menuBtn" aria-controls="side" aria-expanded="false">Index</button><b>FFA Station Manual</b><button type="button" id="searchBtn" class="sbtn">Search</button></div>
 
 <aside class="side" id="side">
+  <a class="back" href="/" data-back>&larr; Back to the station</a>
   <div class="brand"><b>FFA Station</b><span>Fish QC · Operator manual</span></div>
   <div class="search" role="search">
     <label for="q" class="sr">Search the manual</label>
@@ -917,6 +926,12 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
 </main>
 
 <script>
+// "Back" returns to the app screen that opened the manual (?from=/config), else the home screen.
+(function () {
+  var from = new URLSearchParams(location.search).get("from") || "/";
+  if (!/^\/(?![\/\\])/.test(from) || /^\/manual/.test(from)) from = "/";
+  document.querySelectorAll("[data-back]").forEach(function (a) { a.href = from; });
+})();
 (() => {
   // Same map as the station (user-interface/src/config/index.js).
   const DEFECTS = [

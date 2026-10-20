@@ -214,6 +214,34 @@
             </v-list>
           </v-card-text>
         </v-card>
+
+        <h3 class="mt-10 mb-3">
+          <v-icon class="mr-2">mdi-book-open-variant</v-icon>
+          Help
+        </h3>
+        <v-card elevation="2" class="mb-10">
+          <v-card-text>
+            <v-list>
+              <v-list-item>
+                <v-list-item-title>Operator manual</v-list-item-title>
+                <v-list-item-subtitle>
+                  How to run a shift, keyboard shortcuts, calibration and troubleshooting
+                </v-list-item-subtitle>
+                <v-list-item-action class="justify-end">
+                  <!-- served by ffa-app outside the SPA, so a full page load, not a router link -->
+                  <v-btn
+                    href="/manual/?from=/config"
+                    color="primary"
+                    class="buttons"
+                  >
+                    <v-icon class="mr-1">mdi-book-open-page-variant</v-icon>
+                    Open
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
   </v-container>
