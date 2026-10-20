@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FFA Station Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: fixed left index (the "route card" of the shift) + one reading column; collapses to a top bar + drawer on phones. */
+:root {
+  --bg: #f4f6f7;
+  --paper: #ffffff;
+  --ink: #12232e;
+  --muted: #566672;
+  --line: #d9e0e4;
+  --accent: #1d5fa8;        /* matches the station's primary blue */
+  --accent-ink: #ffffff;
+  --signal: #d9531e;        /* warnings, "don't" */
+  --ok: #2c8a4b;
+  --defect: #d33a2c;
+  --defect-on: #8cc63f;
+  --key: #e9edf0;
+  --key-edge: #b9c3ca;
+  --side: #0f2433;
+  --side-fg: #c9d6de;
+  --side-hi: #ffffff;
+  --tip-bg: #e8f1fb;
+  --warn-bg: #fdeee6;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --side-w: 288px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1820; --paper: #13222c; --ink: #e3eaef; --muted: #9aabb6; --line: #263a47;
+  --accent: #6aa8ea; --accent-ink: #08131b; --signal: #f08a5d; --ok: #63c486; --defect: #ef5b4c; --defect-on: #a6dd5c;
+  --key: #1e313d; --key-edge: #3a5262; --side: #08131b; --side-fg: #9fb3c0; --side-hi: #ffffff;
+  --tip-bg: #15304a; --warn-bg: #3a2218; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0d1820; --paper: #13222c; --ink: #e3eaef; --muted: #9aabb6; --line: #263a47;
+  --accent: #6aa8ea; --accent-ink: #08131b; --signal: #f08a5d; --ok: #63c486; --defect: #ef5b4c; --defect-on: #a6dd5c;
+  --key: #1e313d; --key-edge: #3a5262; --side: #08131b; --side-fg: #9fb3c0; --side-hi: #ffffff;
+  --tip-bg: #15304a; --warn-bg: #3a2218; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+
+/* ---------- side index ---------- */
+.side {
+  position: fixed; inset: 0 auto 0 0; width: var(--side-w); background: var(--side); color: var(--side-fg);
+  padding: calc(24px + env(safe-area-inset-top, 0px)) 0 calc(24px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+  overflow-y: auto; z-index: 20; display: flex; flex-direction: column; gap: 20px;
+}
+.brand { padding: 0 24px; display: grid; gap: 2px; }
+.brand b { font: 700 28px/1 var(--display); letter-spacing: .02em; color: var(--side-hi); text-transform: uppercase; }
+.brand span { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.side nav { display: grid; gap: 14px; }
+.side h4 { margin: 0; padding: 0 24px; font: 600 12px/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: #7f96a5; }
+.side ol { list-style: none; margin: 4px 0 0; padding: 0; counter-reset: s; }
+.side li a {
+  display: grid; grid-template-columns: 26px 1fr; align-items: baseline; gap: 6px; padding: 6px 24px; color: inherit; text-decoration: none;
+  font-size: 14.5px; line-height: 1.35; border-left: 3px solid transparent;
+}
+.side li a .n { font: 600 13px var(--mono); color: #6f8797; }
+.side li a:hover { color: var(--side-hi); background: rgba(255,255,255,.04); }
+.side li a.on { color: var(--side-hi); border-left-color: #6aa8ea; background: rgba(106,168,234,.12); }
+.side li a.on .n { color: #6aa8ea; }
+.side li a:focus-visible { outline: 2px solid #6aa8ea; outline-offset: -2px; }
+.side .sup a .n { color: #d98b62; }
+.side .foot { margin-top: auto; padding: 0 24px; font-size: 12px; color: #6f8797; }
+
+/* topics: sub-entries of the section in view (or the one clicked) */
+.side .topics { list-style: none; margin: 0 0 6px; padding: 0; display: none; gap: 0; max-width: none; }
+.side li.open > .topics { display: grid; }
+.side .topics a { display: block; padding: 4px 24px 4px 59px; font-size: 13.5px; line-height: 1.3; color: #93a9b7; border-left: 3px solid transparent; }
+.side .topics a:hover { color: var(--side-hi); background: rgba(255,255,255,.04); }
+.side .topics a.on { color: var(--side-hi); border-left-color: rgba(106,168,234,.5); }
+
+/* search */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.search { position: relative; margin: 0 16px; }
+.search input {
+  width: 100%; font: 500 15px var(--body); color: var(--side-hi); background: rgba(255,255,255,.07); border: 1px solid #2f4757;
+  border-radius: 8px; padding: 10px 36px 10px 12px; outline: none;
+}
+.search input::placeholder { color: #7f96a5; }
+.search input:focus { border-color: #6aa8ea; background: rgba(255,255,255,.1); }
+.search .slash { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); background: transparent; color: #7f96a5; border-color: #3a5262; font-size: 11px; min-width: 0; padding: 0 6px; }
+.search input:not(:placeholder-shown) + .slash { display: none; }
+.results { display: grid; gap: 2px; padding: 0 8px; }
+.results .count { padding: 0 16px 6px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #7f96a5; }
+.results a { display: grid; gap: 2px; padding: 8px 12px; border-radius: 6px; color: var(--side-fg); text-decoration: none; border-left: 3px solid transparent; }
+.results a:hover, .results a.sel { background: rgba(106,168,234,.14); color: var(--side-hi); border-left-color: #6aa8ea; }
+.results a:focus-visible { outline: 2px solid #6aa8ea; outline-offset: -2px; }
+.results .where { font: 600 11.5px var(--mono); color: #6f8797; letter-spacing: .02em; }
+.results .what { font-weight: 600; font-size: 14.5px; line-height: 1.3; color: var(--side-hi); }
+.results .snip { font-size: 13px; line-height: 1.4; color: #93a9b7; }
+.results mark { background: rgba(240,180,60,.3); color: inherit; border-radius: 2px; padding: 0 1px; }
+.results .none { padding: 8px 16px; font-size: 14px; color: var(--side-fg); display: grid; gap: 6px; }
+.results .none button { justify-self: start; background: none; border: 1px solid #3a5262; color: var(--side-fg); border-radius: 6px; padding: 3px 9px; font: 500 13px var(--body); cursor: pointer; }
+.side.searching nav { display: none; }
+
+/* where a search result or topic landed */
+.hit { animation: hit 2.2s ease-out; border-radius: 8px; }
+@keyframes hit { 0%, 35% { box-shadow: 0 0 0 4px var(--signal); background-color: color-mix(in srgb, var(--signal) 10%, transparent); } 100% { box-shadow: 0 0 0 4px transparent; } }
+
+.topbar { display: none; }
+main { margin-left: var(--side-w); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 96px; }
+.col { max-width: 920px; margin: 0 auto; display: grid; gap: 72px; }
+section { display: grid; gap: 20px; min-width: 0; }
+
+@media (max-width: 960px) {
+  .side { transform: translateX(-100%); transition: transform .2s ease; width: min(86vw, 320px); }
+  body.menu .side { transform: none; box-shadow: 0 0 0 100vmax rgba(0,0,0,.45); }
+  .topbar {
+    display: flex; align-items: center; gap: 12px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    background: var(--side); color: var(--side-hi);
+    padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .topbar b { font: 700 20px var(--display); text-transform: uppercase; letter-spacing: .03em; }
+  .topbar .sbtn { margin-left: auto; }
+  .topbar button { background: none; border: 1px solid #3a5262; color: inherit; border-radius: 6px; padding: 6px 10px; font: 600 14px var(--body); cursor: pointer; }
+  main { margin-left: 0; padding-block: 24px 72px; }
+}
+
+/* ---------- type ---------- */
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1 { font-size: clamp(40px, 6vw, 64px); line-height: .95; font-weight: 700; text-transform: uppercase; }
+h2 { font-size: clamp(30px, 4vw, 40px); line-height: 1.05; font-weight: 700; text-transform: uppercase; display: flex; gap: 14px; align-items: baseline; }
+h2 .n { font: 600 18px var(--mono); color: var(--accent); }
+h3 { font-size: 23px; font-weight: 600; line-height: 1.2; }
+p, ul, ol { margin: 0; max-width: 68ch; }
+ul, ol { padding-left: 22px; display: grid; gap: 6px; }
+.lede { font-size: 18px; color: var(--muted); }
+.eyebrow { font: 600 12px var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+a { color: var(--accent); }
+.who { display: inline-block; font: 600 11px var(--body); letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; background: var(--key); color: var(--muted); vertical-align: middle; }
+.who.sup { background: var(--warn-bg); color: var(--signal); }
+
+/* keycaps */
+kbd {
+  font: 600 .82em var(--mono); display: inline-block; min-width: 1.9em; text-align: center; padding: .08em .45em; border-radius: 5px;
+  background: var(--key); border: 1px solid var(--key-edge); border-bottom-width: 3px; color: var(--ink); white-space: nowrap; line-height: 1.5;
+}
+
+/* ---------- hero ---------- */
+.hero { display: grid; gap: 18px; }
+.hero .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--muted); }
+.flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; counter-reset: f; margin-top: 8px; }
+.flow a {
+  display: grid; gap: 4px; padding: 14px; text-decoration: none; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+}
+.flow a:hover { border-color: var(--accent); }
+.flow a i { font: 600 13px var(--mono); color: var(--accent); font-style: normal; }
+.flow a b { font: 600 19px/1.1 var(--display); text-transform: uppercase; }
+.flow a span { font-size: 13px; color: var(--muted); line-height: 1.35; }
+
+/* ---------- figures ---------- */
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.shot { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+.shot img { display: block; width: 100%; height: auto; }
+figcaption { font-size: 14px; color: var(--muted); }
+.pin {
+  position: absolute; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%;
+  background: var(--signal); color: #fff; font: 700 14px/28px var(--mono); text-align: center; box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 2px 6px rgba(0,0,0,.35);
+}
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; list-style: none; padding: 0; max-width: none; }
+.legend li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 15px; }
+.legend li > b:first-child {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--signal); color: #fff; font: 700 13px/26px var(--mono); text-align: center;
+}
+@media (max-width: 720px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+
+/* ---------- steps ---------- */
+.steps { list-style: none; padding: 0; counter-reset: st; display: grid; gap: 14px; max-width: none; }
+.steps > li { counter-increment: st; display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
+.steps > li::before {
+  content: counter(st); width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: var(--accent-ink);
+  font: 700 18px/36px var(--display); text-align: center;
+}
+.steps > li > div { display: grid; gap: 4px; min-width: 0; }
+.steps b.t { font-weight: 600; }
+
+/* ---------- callouts ---------- */
+.note { border-radius: 8px; padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; font-size: 15px; max-width: 76ch; }
+.note::before { font: 700 13px var(--body); letter-spacing: .08em; text-transform: uppercase; padding-top: 1px; }
+.note.tip { background: var(--tip-bg); }
+.note.tip::before { content: "Tip"; color: var(--accent); }
+.note.warn { background: var(--warn-bg); }
+.note.warn::before { content: "Don't"; color: var(--signal); }
+.note.info { background: var(--paper); border: 1px solid var(--line); }
+.note.info::before { content: "Why"; color: var(--muted); }
+
+/* ---------- flipbook ---------- */
+.flip { display: grid; gap: 10px; }
+.flip .stage { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #000; aspect-ratio: 16 / 9; max-width: 100%; }
+.flip .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .35s ease; }
+.flip .stage img.on { opacity: 1; }
+.flip .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.flip button {
+  font: 600 14px var(--body); border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+.flip button:hover { border-color: var(--accent); }
+.flip button:focus-visible, .kb button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.flip .dots { display: flex; gap: 6px; }
+.flip .dots span { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
+.flip .dots span.on { background: var(--accent); }
+.flip .cap { font-size: 15px; min-height: 2.6em; }
+.flip .cap b { font: 600 13px var(--mono); color: var(--accent); margin-right: 6px; }
+
+video { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); background: #000; }
+
+/* ---------- tables ---------- */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.code { font: 600 14px var(--mono); }
+
+/* ---------- keyboard ---------- */
+.kbwrap { overflow-x: auto; padding-bottom: 4px; }
+.kb { display: grid; gap: 6px; min-width: 760px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+.kb .row { display: grid; gap: 6px; }
+.kb button {
+  height: 54px; border-radius: 7px; border: 1px solid var(--key-edge); border-bottom-width: 4px; background: var(--key); color: var(--muted);
+  font: 600 13px var(--mono); display: grid; place-items: center; align-content: center; gap: 1px; cursor: default; padding: 0 4px; line-height: 1.1;
+}
+.kb button small { font: 600 10.5px var(--body); letter-spacing: .02em; }
+.kb button.d { background: color-mix(in srgb, var(--defect) 16%, var(--key)); border-color: color-mix(in srgb, var(--defect) 55%, var(--key-edge)); color: var(--ink); cursor: pointer; }
+.kb button.a { background: color-mix(in srgb, var(--accent) 18%, var(--key)); border-color: color-mix(in srgb, var(--accent) 60%, var(--key-edge)); color: var(--ink); cursor: pointer; }
+.kb button.x { opacity: .45; }
+.kb button.sel { outline: 3px solid var(--signal); outline-offset: 1px; }
+.kbinfo { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: center; padding: 14px 16px; border-radius: 8px; background: var(--paper); border: 1px solid var(--line); min-height: 78px; }
+.kbinfo .big { grid-row: span 2; font: 700 34px var(--display); min-width: 64px; text-align: center; }
+.kbinfo .nm { font-weight: 600; }
+.kbinfo .ds { color: var(--muted); font-size: 14px; }
+.keylegend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--muted); }
+.keylegend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.keylegend .l1::before { background: color-mix(in srgb, var(--defect) 40%, var(--key)); }
+.keylegend .l2::before { background: color-mix(in srgb, var(--accent) 45%, var(--key)); }
+
+/* ---------- cheat sheet ---------- */
+.sheet { background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 20px; display: grid; gap: 16px; }
+.sheet header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+.sheet header b { font: 700 26px var(--display); text-transform: uppercase; }
+.sheet .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 24px; }
+.sheet dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; font-size: 14.5px; }
+.sheet dt { justify-self: start; }
+.sheet dd { margin: 0; }
+.sheet h5 { margin: 0 0 6px; font: 600 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.trouble td:first-child { font-weight: 600; width: 32%; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.status::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.s-red { color: var(--defect); } .s-green { color: var(--ok); }
+
+.placeholder { border: 2px dashed var(--line); border-radius: 8px; padding: 28px; text-align: center; color: var(--muted); font-size: 15px; background: var(--paper); }
+
+hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.supbanner { display: grid; gap: 8px; padding: 22px; border-radius: 10px; background: var(--warn-bg); }
+.supbanner h2 { color: var(--signal); }
+
+@media print {
+  .side, .topbar, .flip .bar, video { display: none !important; }
+  main { margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><button type="button" id="menuBtn" aria-controls="side" aria-expanded="false">Index</button><b>FFA Station Manual</b><button type="button" id="searchBtn" class="sbtn">Search</button></div>
+
+<aside class="side" id="side">
+  <div class="brand"><b>FFA Station</b><span>Fish QC · Operator manual</span></div>
+  <div class="search" role="search">
+    <label for="q" class="sr">Search the manual</label>
+    <input id="q" type="search" placeholder="Search the manual…" autocomplete="off" spellcheck="false" aria-controls="results">
+    <kbd class="slash" aria-hidden="true">/</kbd>
+  </div>
+  <div class="results" id="results" hidden aria-live="polite"></div>
+  <nav aria-label="Manual index" id="toc">
+    <div>
+      <h4>Your shift</h4>
+      <ol>
+        <li><a href="#start" data-k="morning begin power on startup checklist"><span class="n">01</span>Start of shift</a>
+          <ul class="topics">
+            <li><a href="#start-check" data-k="connected status laser camera clean lens">Pre-shift checklist</a></li>
+            <li><a href="#start-zero" data-k="zero drift offset grams scale reading">Empty scale not at 0 g</a></li>
+            <li><a href="#start-limit" data-k="5 kg heavy overload lean load cell">Maximum load on the plate</a></li>
+          </ul>
+        </li>
+        <li><a href="#lots" data-k="lot batch delivery"><span class="n">02</span>Create or pick a lot</a>
+          <ul class="topics">
+            <li><a href="#lots-screen" data-k="lots information green arrow open analyse log blue list">Lot list screen</a></li>
+            <li><a href="#lots-add" data-k="create new lot form save">Add a new lot</a></li>
+            <li><a href="#lots-fields" data-k="supplier lot number production date order species type size item code wms sar mack sardine mackerel can">Lot fields explained</a></li>
+            <li><a href="#lots-screen" data-k="find barcode scanner reader filter">Search a lot / barcode</a></li>
+            <li><a href="#lots-reuse" data-k="duplicate reuse unique test lot">Lot number rules</a></li>
+          </ul>
+        </li>
+        <li><a href="#samples" data-k="sample fish capture photo weigh"><span class="n">03</span>Capture samples</a>
+          <ul class="topics">
+            <li><a href="#samples-screen" data-k="live weight camera status captured panel help cancel lot">Sample screen layout</a></li>
+            <li><a href="#samples-steps" data-k="place fish laser line beep space capture next">One fish, step by step</a></li>
+            <li><a href="#samples-early" data-k="early wait 4 seconds settle stabilize">Pressing Space before the beep</a></li>
+            <li><a href="#samples-defects" data-k="defect light red green toggle undo">Marking defects</a></li>
+            <li><a href="#samples-video" data-k="video demo">Video of the sample screen</a></li>
+            <li><a href="#samples-aborted" data-k="weight never stabilized empty plate help shortcuts">Capture aborted / shortcut list</a></li>
+            <li><a href="#samples-extra" data-k="extra photo image foreign object E">Other findings (extra photo)</a></li>
+            <li><a href="#samples-save" data-k="save dialog Y N discard leave">Save the last test?</a></li>
+            <li><a href="#samples-tare" data-k="tare zero wrong weights tray">Tare and zero warning</a></li>
+          </ul>
+        </li>
+        <li><a href="#keys" data-k="keyboard shortcut key"><span class="n">04</span>Defect &amp; action keys</a>
+          <ul class="topics">
+            <li><a href="#keys-kb" data-k="keyboard map layout">Interactive keyboard</a></li>
+            <li><a href="#keys-defects" data-k="defect code BB SBB HD M S LD OS OS2 O2 AN OSM ST GR GC SC T broken belly soft oxidation spike tail gill">Defect list</a></li>
+            <li><a href="#keys-actions" data-k="space capture cancel extra brt laser zero tare">Action keys</a></li>
+            <li><a href="#keys-caps" data-k="caps lock tail light">Caps Lock light</a></li>
+          </ul>
+        </li>
+        <li><a href="#brt" data-k="brt belly hook pull tension break"><span class="n">05</span>Belly resistance test</a>
+          <ul class="topics">
+            <li><a href="#brt-screen" data-k="state duration max tension curve start stop reset save">BRT screen</a></li>
+            <li><a href="#brt-steps" data-k="hang hook tare pull tear 30 g 80 g 10 seconds">Running a test</a></li>
+            <li><a href="#brt-save" data-k="save next anisakis back samples H">Saving &amp; moving on</a></li>
+          </ul>
+        </li>
+        <li><a href="#anisakis" data-k="anisakis parasite worm"><span class="n">06</span>Anisakis inspection</a>
+          <ul class="topics">
+            <li><a href="#anisakis-screen" data-k="fish analyzed guts belly embedded sites warnings save inspection">Inspection screen</a></li>
+            <li><a href="#anisakis-formula" data-k="formula percentage calculation result">Prevalence &amp; intensity</a></li>
+            <li><a href="#anisakis-zero" data-k="zero none clean save continue">Lot with no parasites</a></li>
+          </ul>
+        </li>
+        <li><a href="#guts" data-k="guts viscera"><span class="n">07</span>Guts weight</a>
+          <ul class="topics">
+            <li><a href="#guts-screen" data-k="stable unsaved dialog save finish skip">Guts weight screen</a></li>
+            <li><a href="#guts-steps" data-k="capture current weight save guts weight finish lot tray">Weighing the guts</a></li>
+          </ul>
+        </li>
+        <li><a href="#finish" data-k="end complete done"><span class="n">08</span>Finish &amp; reports</a>
+          <ul class="topics">
+            <li><a href="#finish-downloads" data-k="download excel xlsx pdf ffa report view logs back home">Excel &amp; PDF report</a></li>
+            <li><a href="#finish-again" data-k="export later re-download">Download a report again</a></li>
+          </ul>
+        </li>
+        <li><a href="#log" data-k="history log"><span class="n">09</span>Lot log &amp; samples</a>
+          <ul class="topics">
+            <li><a href="#log-tabs" data-k="log extra images belly resistance test rows">Log tabs</a></li>
+            <li><a href="#log-sample" data-k="measured photo body length head length diameter height weight defects">Sample details</a></li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+    <div>
+      <h4>When something&#39;s off</h4>
+      <ol>
+        <li><a href="#trouble" data-k="problem error help fix issue"><span class="n">10</span>Troubleshooting</a>
+          <ul class="topics">
+            <li><a href="#t-stable" data-k="beep stable abort">No beep / weight never stabilized</a></li>
+            <li><a href="#t-zero" data-k="zero drift">Empty plate not at 0 g</a></li>
+            <li><a href="#t-fault" data-k="adc failure red chip fault link transmitter">Scale fault or NO LINK</a></li>
+            <li><a href="#t-disconnected" data-k="device status disconnected restart power offline">Station disconnected</a></li>
+            <li><a href="#t-camera" data-k="camera black dark image cable lighting">Black camera image</a></li>
+            <li><a href="#t-defect" data-k="mistake undo wrong key">Wrong defect pressed</a></li>
+            <li><a href="#t-window" data-k="closed desktop kiosk reopen">Window closed / desktop showing</a></li>
+            <li><a href="#t-wrongfish" data-k="mistake wrong sample delete cancel">Captured the wrong fish</a></li>
+          </ul>
+        </li>
+        <li><a href="#sheet" data-k="print card summary keys"><span class="n">11</span>Cheat sheet</a>
+        </li>
+      </ol>
+    </div>
+    <div class="sup">
+      <h4>Supervisor only</h4>
+      <ol>
+        <li><a href="#config" data-k="settings setup supervisor"><span class="n">12</span>Configuration</a>
+          <ul class="topics">
+            <li><a href="#config-menu" data-k="load cell quality criteria vision fish parameters">Configuration menu</a></li>
+          </ul>
+        </li>
+        <li><a href="#calibration" data-k="calibrate calibration scale reference weight 1000 g"><span class="n">13</span>Scale calibration</a>
+          <ul class="topics">
+            <li><a href="#calibration" data-k="drift moved repair reference">When to calibrate</a></li>
+            <li><a href="#cal-wizard" data-k="fish weight belly resistance step next save verified">Calibration wizard, step by step</a></li>
+            <li><a href="#cal-video" data-k="video demo">Calibration video</a></li>
+            <li><a href="#cal-cancel" data-k="cancel halfway">Cancelling a calibration</a></li>
+            <li><a href="#cal-net" data-k="net tare disable keypad error">“Transmitter is showing NET weight”</a></li>
+            <li><a href="#cal-after" data-k="zero reference corners repeatability">Checks after calibrating</a></li>
+          </ul>
+        </li>
+        <li><a href="#vision" data-k="camera vision"><span class="n">14</span>Camera zone &amp; length</a>
+          <ul class="topics">
+            <li><a href="#vision-zoi" data-k="zoi zone area corners">Zone of interest (ZOI)</a></li>
+            <li><a href="#vision-length" data-k="length ruler millimetres mm pixels">Length calibration</a></li>
+          </ul>
+        </li>
+        <li><a href="#criteria" data-k="size species"><span class="n">15</span>Size ranges &amp; species</a>
+          <ul class="topics">
+            <li><a href="#criteria-ranges" data-k="length range min max cm can size out of spec">Acceptable length ranges</a></li>
+            <li><a href="#criteria-params" data-k="fish parameters species type reset update">Fish species parameters</a></li>
+          </ul>
+        </li>
+        <li><a href="#export" data-k="export download history"><span class="n">16</span>Export &amp; history</a>
+          <ul class="topics">
+            <li><a href="#export-data" data-k="excel pdf any lot">Export data (Excel / PDF)</a></li>
+            <li><a href="#export-history" data-k="calibration history date">Calibration history</a></li>
+          </ul>
+        </li>
+        <li><a href="#kiosk" data-k="kiosk technician desktop ssh"><span class="n">17</span>Kiosk maintenance</a>
+          <ul class="topics">
+            <li><a href="#kiosk" data-k="alt f4 windows key locked reopen">Locked screen</a></li>
+            <li><a href="#kiosk-cmds" data-k="stop reboot uninstall ssh command">Kiosk commands</a></li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </nav>
+  <div class="foot">Screens captured on the production station, October 2026.</div>
+</aside>
+
+<main>
+<div class="col">
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <span class="eyebrow">Fish Freshness Analysis · QC station</span>
+  <h1>FFA Station Manual</h1>
+  <p class="lede">How to run a lot on the FFA station, from the first fish on the scale to the PDF report. Each sample is weighed, photographed and measured by the camera, and you mark its defects with one key press.</p>
+  <div class="meta"><span>Screens: 1920 × 1080 touch display</span><span>Scale division: 1 g</span><span>Keyboard + barcode reader</span></div>
+  <div class="flow" aria-label="A lot, step by step">
+    <a href="#lots"><i>Step 1</i><b>Lot</b><span>Create it or find it, press the green arrow</span></a>
+    <a href="#samples"><i>Step 2</i><b>Samples</b><span>Fish on the plate, defect keys, beep, <kbd>Space</kbd></span></a>
+    <a href="#brt"><i>Step 3</i><b>BRT</b><span>Hang, tare, pull until the belly breaks</span></a>
+    <a href="#anisakis"><i>Step 4</i><b>Anisakis</b><span>Count infected fish and parasites</span></a>
+    <a href="#guts"><i>Step 5</i><b>Guts weight</b><span>Weigh the viscera, Finish Lot</span></a>
+    <a href="#finish"><i>Step 6</i><b>Report</b><span>Excel or PDF, then back to the lot list</span></a>
+  </div>
+</section>
+
+<!-- ================= 01 START ================= -->
+<section id="start">
+  <h2><span class="n">01</span>Start of shift</h2>
+  <p>The station starts by itself. After power-on it waits for the FFA software and opens the screen full-size; you never need a desktop, a browser or a password. Before the first fish, check four things.</p>
+  <ol class="steps" id="start-check">
+    <li><div><b class="t">Device status says <span class="status s-green">Connected</span></b><span>Bottom-left of every screen. If it says <span class="status s-red">Disconnected</span>, wait 30 seconds; if it stays red, see <a href="#trouble">Troubleshooting</a>.</span></div></li>
+    <li><div><b class="t">The empty scale reads 0 g (±2 g)</b><span>Open any lot's sample screen and look at the red/green number next to <em>LIVE</em>. Nothing may touch the plate.</span></div></li>
+    <li><div><b class="t">The laser cross is on the plate</b><span>A green cross is shown on the live camera image. Press <kbd>M</kbd> to switch the laser on or off.</span></div></li>
+    <li><div><b class="t">The camera image is clean</b><span>No water drops, fish scales or gloves in view. Wipe the plate and the lens cover if needed.</span></div></li>
+  </ol>
+  <div class="note warn" id="start-limit"><span>Don't put anything heavier than 5 kg on the plate, and don't lean on it. The load cell under it is a precision part.</span></div>
+  <div class="note tip" id="start-zero"><span>If the empty plate reads a few grams off, take everything off, wait until the number is green, and press <kbd>Z</kbd> (zero) on the sample screen. If it is more than 20 g off, call a supervisor: the scale may need <a href="#calibration">calibration</a>.</span></div>
+</section>
+
+<!-- ================= 02 LOTS ================= -->
+<section id="lots">
+  <h2><span class="n">02</span>Create or pick a lot</h2>
+  <p>Every sample belongs to a lot. The first screen, <b>Lots Information</b>, lists all lots, newest first. Use the green arrow to analyse a lot and the blue list icon to open its log.</p>
+  <figure id="lots-screen">
+    <div class="shot">
+      <img src="img/01-lot-list.jpg" alt="Lots Information screen with the Add button and the list of lots" loading="lazy" width="1600" height="900">
+      <span class="pin" style="left:83%;top:16%">1</span>
+      <span class="pin" style="left:16%;top:25%">2</span>
+      <span class="pin" style="left:81.6%;top:36.6%">3</span>
+      <span class="pin" style="left:85.6%;top:36.6%">4</span>
+    </div>
+  </figure>
+  <ul class="legend">
+    <li><b>1</b><span><b>Add</b> creates a new lot.</span></li>
+    <li><b>2</b><span><b>Search lots</b> filters by WMS code, lot number or supplier. The barcode reader types into this box.</span></li>
+    <li><b>3</b><span><b>Green arrow</b> opens the lot for analysis (sample capture).</span></li>
+    <li><b>4</b><span><b>Blue list</b> opens the lot's log: samples, extra photos and BRT results.</span></li>
+  </ul>
+
+  <h3 id="lots-add">Add a new lot</h3>
+  <div class="flip" data-flip>
+    <div class="stage">
+      <img src="img/01-lot-list.jpg" alt="" data-cap="Press Add on the Lots Information screen.">
+      <img src="img/02-add-lot-empty.jpg" alt="" data-cap="The Add Lot form opens. Every field marked * is required.">
+      <img src="img/03-add-lot-date.jpg" alt="" data-cap="Tap Production date and pick the day on the calendar.">
+      <img src="img/04-add-lot-itemcode.jpg" alt="" data-cap="Item Code: type part of the code or the description to filter the list.">
+      <img src="img/05-add-lot-filled.jpg" alt="" data-cap="Check every field, then press Save. Save stays grey until the form is complete.">
+      <img src="img/07-lot-search.jpg" alt="" data-cap="The new lot is in the list. Search for it and press the green arrow.">
+    </div>
+    <div class="bar"><button type="button" data-prev>◀ Back</button><button type="button" data-play>Play</button><button type="button" data-next>Next ▶</button><div class="dots"></div></div>
+    <p class="cap"></p>
+  </div>
+  <div class="tbl" id="lots-fields"><table>
+    <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+    <tbody>
+      <tr><td>Supplier name</td><td>As written on the delivery paperwork, e.g. <code>RYA/CN</code>.</td></tr>
+      <tr><td>Lot #</td><td>The lot number. It must be unique and cannot be changed later.</td></tr>
+      <tr><td>Production date</td><td>From the carton label.</td></tr>
+      <tr><td>Order No</td><td>Purchase order, e.g. <code>4799/14</code>.</td></tr>
+      <tr><td>Fish species</td><td><code>SAR</code> sardine · <code>MACK</code> mackerel · <code>H-MACK</code>. The camera uses this to measure correctly.</td></tr>
+      <tr><td>Type</td><td><code>WR</code> whole round · <code>HG</code> headed &amp; gutted · <code>HGT</code> as stated on the item code.</td></tr>
+      <tr><td>Size</td><td>Can size: <code>TALL</code>, <code>BIG_OVAL</code>, <code>SMALL_OVAL</code>, <code>JITNEY</code>, <code>CLUB_CAN</code>, <code>BUFFET</code>, <code>TOWER</code>. Sets the accepted length range.</td></tr>
+      <tr><td>Item Code</td><td>The WMS item code, searchable by code or description.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn" id="lots-reuse"><span>Don't reuse a lot number for a different delivery, and don't create test lots on the production station. Every lot appears in the reports.</span></div>
+</section>
+
+<!-- ================= 03 SAMPLES ================= -->
+<section id="samples">
+  <h2><span class="n">03</span>Capture samples</h2>
+  <p>This is where most of the shift is spent. The left side shows the live camera and live weight; the right side shows the last sample you captured.</p>
+  <figure id="samples-screen">
+    <div class="shot">
+      <img src="img/10-home.jpg" alt="Sample capture screen" loading="lazy" width="1600" height="900">
+      <span class="pin" style="left:8.5%;top:3.6%">1</span>
+      <span class="pin" style="left:10%;top:12.8%">2</span>
+      <span class="pin" style="left:20.6%;top:12.8%">3</span>
+      <span class="pin" style="left:7%;top:17.6%">4</span>
+      <span class="pin" style="left:33%;top:50%">5</span>
+      <span class="pin" style="left:30%;top:83.4%">6</span>
+      <span class="pin" style="left:83%;top:17.6%">7</span>
+      <span class="pin" style="left:86%;top:16.6%">8</span>
+      <span class="pin" style="left:2%;top:92.8%">9</span>
+      <span class="pin" style="left:82%;top:92.4%">10</span>
+      <span class="pin" style="left:97%;top:92.4%">11</span>
+    </div>
+  </figure>
+  <ul class="legend">
+    <li><b>1</b><span><b>Progress</b>: Samples → BRT → Anisakis → Guts Weight.</span></li>
+    <li><b>2</b><span><b>Lot</b> being analysed and the number of the last saved sample.</span></li>
+    <li><b>3</b><span><b>Status</b>: <em>Ready to capture</em>, <em>Processing…</em>, <em>Ready for next sample</em>.</span></li>
+    <li><b>4</b><span><b>Live weight</b>. <span class="s-red">Red</span> while settling, <span class="s-green">green</span> when stable.</span></li>
+    <li><b>5</b><span><b>Live camera</b> with the laser cross. Lay the fish along the horizontal line.</span></li>
+    <li><b>6</b><span><b>Defect lights</b> for the fish on the plate. Each one shows its key underneath.</span></li>
+    <li><b>7</b><span><b>Captured</b>: the last sample's photo, weight and defects.</span></li>
+    <li><b>8</b><span><b>Log</b> and <b>Other Findings</b> (extra photo, key <kbd>E</kbd>).</span></li>
+    <li><b>9</b><span><b>Help</b>: shows every keyboard shortcut.</span></li>
+    <li><b>10</b><span><b>Cancel Lot</b> leaves the lot and returns to the lot list.</span></li>
+    <li><b>11</b><span><b>Next: BRT</b> saves the last sample and moves on.</span></li>
+  </ul>
+
+  <h3 id="samples-steps">One fish, step by step</h3>
+  <ol class="steps">
+    <li><div><b class="t">Place the fish on the plate</b><span>Lay it flat along the horizontal laser line, head to the left, fully inside the camera view. Take your hand off the fish.</span></div></li>
+    <li><div><b class="t">Mark its defects</b><span>Press the key of each defect you see. Its light turns from red to green. Press the same key again to undo. See <a href="#keys">the key map</a>.</span></div></li>
+    <li><div><b class="t">Wait for the beep</b><span>The station beeps once when the weight is confirmed: three stable readings within 1 g, and at least 20 g on the plate. The live weight turns green.</span></div></li>
+    <li><div><b class="t">Press <kbd>Space</kbd></b><span>The photo and the confirmed weight move to the <em>Captured</em> panel, together with the defects you marked. The camera measures length and height.</span></div></li>
+    <li><div><b class="t">Take the fish off and place the next one</b><span>The captured sample is saved when you capture the next fish or press <b>Next: BRT</b>. Until then you can still discard it with <kbd>C</kbd>.</span></div></li>
+  </ol>
+  <div class="note info" id="samples-early"><span>You may press <kbd>Space</kbd> before the beep. The station then waits up to 4 seconds for the weight to settle and captures the confirmed value, never a reading that was still moving. If it doesn't settle, you'll see <em>“Weight never stabilized, capture aborted”</em>: steady the fish and press <kbd>Space</kbd> again.</span></div>
+
+  <h3 id="samples-defects">Marking defects</h3>
+  <div class="flip" data-flip>
+    <div class="stage">
+      <img src="img/12a-defects-before.jpg" alt="" data-cap="All defect lights are red: nothing marked yet.">
+      <img src="img/12-defect-1.jpg" alt="" data-cap="Press 1: BB (Broken Belly) turns green.">
+      <img src="img/12-defect-5.jpg" alt="" data-cap="Press 5: S (Soft) turns green as well.">
+      <img src="img/12-defect-tab.jpg" alt="" data-cap="Press Tab: ST (Spike) turns green. Press any key again to clear that defect.">
+    </div>
+    <div class="bar"><button type="button" data-prev>◀ Back</button><button type="button" data-play>Play</button><button type="button" data-next>Next ▶</button><div class="dots"></div></div>
+    <p class="cap"></p>
+  </div>
+
+  <h3 id="samples-video">Video: the sample screen in use</h3>
+  <figure>
+    <video src="media/analysis-screen.mp4" poster="media/analysis-poster.jpg" controls muted playsinline preload="none"></video>
+    <figcaption>Opening the shortcut list, marking defects with the keyboard, a capture with an empty plate (aborted, as expected) and an Other Findings photo. Recorded on the production station.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="placeholder">Capture with a real fish: photo coming. It will show the Captured panel with the measured fish, its weight and its defects.</div>
+  </figure>
+
+  <div class="two" id="samples-aborted">
+    <figure>
+      <div class="shot"><img src="img/13b-capture-aborted.jpg" alt="Capture aborted message" loading="lazy" width="1600" height="900"></div>
+      <figcaption><kbd>Space</kbd> with an empty plate or a moving fish: after 4 s the station shows “Weight never stabilized, capture aborted”. Nothing is saved.</figcaption>
+    </figure>
+    <figure>
+      <div class="shot"><img src="img/11-home-help.jpg" alt="Keyboard shortcuts overlay" loading="lazy" width="1600" height="900"></div>
+      <figcaption>The <b>?</b> button (bottom-left) lists every shortcut. Close it with the ✕.</figcaption>
+    </figure>
+  </div>
+
+  <h3 id="samples-extra">Other findings (extra photos)</h3>
+  <div class="two">
+    <figure>
+      <div class="shot"><img src="img/14-other-findings.jpg" alt="Other findings preview dialog" loading="lazy" width="1600" height="900"></div>
+      <figcaption>Press <kbd>E</kbd> or <b>Other Findings</b>. The current camera image is shown: <kbd>Y</kbd> saves it to the lot, <kbd>C</kbd> cancels.</figcaption>
+    </figure>
+    <div style="display:grid;gap:12px;align-content:start">
+      <p>Use it for anything worth a photo that has no defect key: a foreign object, a label problem, unusual colour. The photo goes to the lot, not to a sample, and appears under <b>Extra Images</b> in the <a href="#log">log</a>.</p>
+      <p id="samples-save">When you leave the sample screen with a captured sample that isn't saved yet, the station asks <em>“Would you like to save the last test?”</em>. Press <kbd>Y</kbd> to save it or <kbd>N</kbd> to discard it.</p>
+    </div>
+  </div>
+  <div class="note warn" id="samples-tare"><span>Don't press <kbd>T</kbd> (tare) or <kbd>Z</kbd> (zero) while a fish or a tray is on the plate. The next weights would all be wrong.</span></div>
+</section>
+
+<!-- ================= 04 KEYS ================= -->
+<section id="keys">
+  <h2><span class="n">04</span>Defect &amp; action keys</h2>
+  <p>Tap or hover a coloured key to see what it does. Red keys mark a defect on the fish on the plate; blue keys are actions. Grey keys are not used on the sample screen.</p>
+  <div class="keylegend"><span class="l1">Defect (toggles a light)</span><span class="l2">Action</span></div>
+  <div class="kbwrap" id="keys-kb"><div class="kb" id="kb" role="group" aria-label="Station keyboard"></div></div>
+  <div class="kbinfo" id="kbinfo" aria-live="polite"><span class="big">?</span><span class="nm">Pick a key</span><span class="ds">The description appears here.</span></div>
+
+  <h3 id="keys-defects">Defects</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Key</th><th>Code</th><th>Defect</th></tr></thead>
+    <tbody id="defTable"></tbody>
+  </table></div>
+  <h3 id="keys-actions">Actions on the sample screen</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Key</th><th>Action</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Space</kbd></td><td>Capture</td><td>Waits for a confirmed weight, then captures photo, weight and marked defects.</td></tr>
+      <tr><td><kbd>C</kbd></td><td>Cancel</td><td>Discards the captured sample that isn't saved yet and clears the defect lights.</td></tr>
+      <tr><td><kbd>E</kbd></td><td>Other finding</td><td>Takes an extra photo for the lot (<kbd>Y</kbd> save · <kbd>C</kbd> cancel).</td></tr>
+      <tr><td><kbd>B</kbd></td><td>Belly resistance test</td><td>Saves the last sample and opens the BRT screen.</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Laser</td><td>Switches the laser cross on or off.</td></tr>
+      <tr><td><kbd>Z</kbd></td><td>Zero</td><td>Sets the empty scale to 0 g. Only with nothing on the plate.</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Tare</td><td>Subtracts what is on the plate now (e.g. a tray). Only when told to.</td></tr>
+      <tr><td><kbd>Y</kbd> / <kbd>N</kbd></td><td>Save dialog</td><td>Answer “save the last test?” when leaving the screen.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note tip" id="keys-caps"><span><kbd>Caps</kbd> marks the Tail defect, so the keyboard's Caps Lock light will switch on and off with it. That is normal; letters still work.</span></div>
+</section>
+
+<!-- ================= 05 BRT ================= -->
+<section id="brt">
+  <h2><span class="n">05</span>Belly resistance test</h2>
+  <p>The BRT measures how much pull the belly wall takes before it tears. It uses the hook load cell, not the plate. The result is linked to the last sample you captured.</p>
+  <figure id="brt-screen">
+    <div class="shot">
+      <img src="img/20-brt.jpg" alt="Broken Belly Test screen" loading="lazy" width="1600" height="900">
+      <span class="pin" style="left:93%;top:14.5%">1</span>
+      <span class="pin" style="left:9%;top:23%">2</span>
+      <span class="pin" style="left:35%;top:23%">3</span>
+      <span class="pin" style="left:50%;top:55%">4</span>
+      <span class="pin" style="left:15%;top:85%">5</span>
+      <span class="pin" style="left:84.5%;top:85%">6</span>
+    </div>
+  </figure>
+  <ul class="legend">
+    <li><b>1</b><span><b>State</b>: Waiting, Arming, Running, Finished.</span></li>
+    <li><b>2</b><span><b>Test duration</b> in seconds.</span></li>
+    <li><b>3</b><span><b>Max tension</b>: the break point in grams.</span></li>
+    <li><b>4</b><span><b>Live curve</b> of the pull.</span></li>
+    <li><b>5</b><span><b>Start/Stop test</b> (<kbd>Space</kbd>).</span></li>
+    <li><b>6</b><span><b>Reset</b> (<kbd>C</kbd>) and <b>Save</b> (<kbd>S</kbd>).</span></li>
+  </ul>
+  <ol class="steps" id="brt-steps">
+    <li><div><b class="t">Hang the fish on the hook</b><span>Let it hang still.</span></div></li>
+    <li><div><b class="t">Press <kbd>T</kbd> to tare</b><span>Here the tare is correct: it removes the fish's own weight, so only the pull is measured.</span></div></li>
+    <li><div><b class="t">Pull steadily</b><span>The test starts by itself once the pull rises 30 g above the start. You can also press <kbd>Space</kbd> to start it.</span></div></li>
+    <li><div><b class="t">Keep pulling until the belly tears</b><span>The test ends when the force drops to half of its peak for half a second (peak at least 80 g), or after 10 seconds.</span></div></li>
+    <li><div><b class="t">Save with <kbd>S</kbd></b><span>“Added” confirms it. <kbd>C</kbd> resets to try again. Pressing <kbd>Space</kbd> after a finished test saves it and starts the next one.</span></div></li>
+  </ol>
+  <div class="note tip" id="brt-save"><span><b>Next: Anisakis</b> saves a finished, unsaved test before moving on. <kbd>H</kbd> or <b>Back: Samples</b> returns to sample capture. While a test runs, every key except <kbd>Space</kbd> is ignored.</span></div>
+  <figure><div class="placeholder">A live BRT curve: photo coming.</div></figure>
+</section>
+
+<!-- ================= 06 ANISAKIS ================= -->
+<section id="anisakis">
+  <h2><span class="n">06</span>Anisakis inspection</h2>
+  <p>Count the fish you opened and, for each body site, how many fish had parasites and how many parasites you found. The results update while you count.</p>
+  <figure id="anisakis-screen">
+    <div class="shot">
+      <img src="img/32-anisakis-warning.jpg" alt="Anisakis inspection with counts and results" loading="lazy" width="1600" height="900">
+      <span class="pin" style="left:3%;top:30.5%">1</span>
+      <span class="pin" style="left:3%;top:39%">2</span>
+      <span class="pin" style="left:30%;top:73.6%">3</span>
+      <span class="pin" style="left:61%;top:33%">4</span>
+      <span class="pin" style="left:61%;top:72.6%">5</span>
+    </div>
+  </figure>
+  <ul class="legend">
+    <li><b>1</b><span><b>Fish analyzed</b>: how many fish this inspection covers. Usually 10.</span></li>
+    <li><b>2</b><span><b>Sites</b>: Guts (viscera), Belly (flaps and cavity wall), Embedded (inside the muscle). Each has <em>Fish with anisakis</em> and <em>Anisakis found</em>.</span></li>
+    <li><b>3</b><span><b>Warnings</b> flag counts that can't be right, e.g. an infected fish with 0 parasites.</span></li>
+    <li><b>4</b><span><b>Results</b>: prevalence and intensity per site.</span></li>
+    <li><b>5</b><span><b>Save inspection</b>. The line below says <em>Not saved yet</em> or <em>Saved</em>.</span></li>
+  </ul>
+  <div class="tbl" id="anisakis-formula"><table>
+    <thead><tr><th>Figure</th><th>Formula</th><th>Example (10 fish, 2 infected, 5 parasites)</th></tr></thead>
+    <tbody>
+      <tr><td>Prevalence</td><td>infected fish ÷ fish analyzed</td><td>2 ÷ 10 = 20.0 %</td></tr>
+      <tr><td>Intensity</td><td>parasites found ÷ infected fish</td><td>5 ÷ 2 = 2.50 per infected fish</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note tip" id="anisakis-zero"><span>A lot with no parasites is a valid result: save it with all counts at 0. The big button reads <b>Save &amp; Continue</b> while there are unsaved counts and <b>Next: Guts Weight</b> once they are saved.</span></div>
+</section>
+
+<!-- ================= 07 GUTS ================= -->
+<section id="guts">
+  <h2><span class="n">07</span>Guts weight</h2>
+  <p>Weigh the viscera of the analysed fish together on the plate.</p>
+  <div class="two" id="guts-screen">
+    <figure>
+      <div class="shot"><img src="img/40-guts.jpg" alt="Guts weight screen" loading="lazy" width="1600" height="900"></div>
+      <figcaption>Live weight turns green and says <b>Stable</b> when it can be captured.</figcaption>
+    </figure>
+    <figure>
+      <div class="shot"><img src="img/42-guts-unsaved-dialog.jpg" alt="Unsaved guts weight dialog" loading="lazy" width="1600" height="900"></div>
+      <figcaption>Finish Lot with an unsaved weight asks: <b>Save &amp; Finish</b>, <b>Skip &amp; Finish</b> or <b>Cancel</b>.</figcaption>
+    </figure>
+  </div>
+  <ol class="steps" id="guts-steps">
+    <li><div><b class="t">Put the guts on the plate (in a tared tray if you use one)</b><span>Wait for <span class="s-green">Stable</span>.</span></div></li>
+    <li><div><b class="t">Press <b>Capture current weight</b></b><span>The value goes into the field. You can correct it by hand.</span></div></li>
+    <li><div><b class="t">Press <b>Save Guts Weight</b></b><span>“Saved: … g” appears below.</span></div></li>
+    <li><div><b class="t">Press <b>Finish Lot</b></b><span>The lot is complete.</span></div></li>
+  </ol>
+</section>
+
+<!-- ================= 08 FINISH ================= -->
+<section id="finish">
+  <h2><span class="n">08</span>Finish &amp; reports</h2>
+  <div class="two" id="finish-downloads">
+    <figure>
+      <div class="shot"><img src="img/50-lot-complete.jpg" alt="Lot analysis complete screen" loading="lazy" width="1600" height="900"></div>
+    </figure>
+    <ul>
+      <li><b>Download Excel</b>: every sample of the lot as an <code>.xlsx</code> sheet.</li>
+      <li><b>Download FFA Report</b>: the full quality-control report as a PDF.</li>
+      <li><b>View Logs</b>: samples, extra photos and BRT results.</li>
+      <li><b>Back to Home</b>: the lot list, ready for the next lot.</li>
+    </ul>
+  </div>
+  <div class="note tip" id="finish-again"><span>Reports can be downloaded again at any time from <b>Configuration → Export data</b>.</span></div>
+</section>
+
+<!-- ================= 09 LOG ================= -->
+<section id="log">
+  <h2><span class="n">09</span>Lot log &amp; samples</h2>
+  <p>Open a log from the blue list icon in the lot list, from <b>Log</b> on the sample screen, or from <b>View Logs</b> when a lot is complete.</p>
+  <div class="two">
+    <figure id="log-tabs">
+      <div class="shot"><img src="img/62-log-real.jpg" alt="Lot log with samples" loading="lazy" width="1600" height="900"></div>
+      <figcaption>Tabs: <b>Log</b> (samples), <b>Extra Images</b>, <b>Belly Resistence Test</b>. The arrow at the end of a row opens the sample.</figcaption>
+    </figure>
+    <figure id="log-sample">
+      <div class="shot"><img src="img/63-sample-detail.jpg" alt="Sample details with measurements" loading="lazy" width="1600" height="900"></div>
+      <figcaption>Sample details: the measured photo (body length, head length, body diameter), weight, height, length and defects.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= 10 TROUBLE ================= -->
+<section id="trouble">
+  <h2><span class="n">10</span>Troubleshooting</h2>
+  <div class="tbl"><table class="trouble">
+    <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr id="t-stable"><td>No beep, and <kbd>Space</kbd> says “Weight never stabilized”</td><td>Something is touching the fish or the plate, or the fish is under 20 g. Let go, check nothing leans on the plate, press <kbd>Space</kbd> again.</td></tr>
+      <tr id="t-zero"><td>The empty plate doesn't read 0 g</td><td>Clear the plate, wait for green, press <kbd>Z</kbd>. More than 20 g off: call a supervisor.</td></tr>
+      <tr id="t-fault"><td>Red chip next to the weight (e.g. <em>ADC_FAILURE</em>) or orange <em>NO LINK</em></td><td>The scale transmitter reports a fault or doesn't answer. Captures are blocked. Call a supervisor.</td></tr>
+      <tr><td>“Scale fault: …” after <kbd>Space</kbd></td><td>Same as above: the capture was refused on purpose. Nothing was saved.</td></tr>
+      <tr id="t-disconnected"><td>Device Status: <span class="status s-red">Disconnected</span></td><td>Wait 30 s. If it stays red, restart the station (power off, wait 10 s, power on). The screen comes back by itself.</td></tr>
+      <tr id="t-camera"><td>Black camera image</td><td>Check the camera cable and the lighting. If the station was just restarted, wait a minute.</td></tr>
+      <tr id="t-defect"><td>A key marks the wrong defect</td><td>Press it again to clear it. Defects are only saved with the next capture.</td></tr>
+      <tr id="t-window"><td>The window closed or shows a desktop</td><td>The screen reopens by itself within a few seconds. If it doesn't, restart the station.</td></tr>
+      <tr id="t-wrongfish"><td>Captured the wrong fish</td><td>Press <kbd>C</kbd> before you capture the next fish or leave the screen. Once saved, ask a supervisor.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 11 SHEET ================= -->
+<section id="sheet">
+  <h2><span class="n">11</span>Cheat sheet</h2>
+  <p>Print this card and keep it next to the keyboard.</p>
+  <div class="sheet">
+    <header><b>FFA · Keys</b><span>Sample screen</span></header>
+    <div class="cols">
+      <div><h5>Every fish</h5><dl>
+        <dt>place</dt><dd>Fish on the laser line</dd>
+        <dt><kbd>0</kbd>–<kbd>-</kbd></dt><dd>Mark defects (again to undo)</dd>
+        <dt>beep</dt><dd>Weight confirmed</dd>
+        <dt><kbd>Space</kbd></dt><dd>Capture</dd>
+        <dt><kbd>C</kbd></dt><dd>Discard last capture</dd>
+        <dt><kbd>E</kbd></dt><dd>Extra photo (<kbd>Y</kbd>/<kbd>C</kbd>)</dd>
+      </dl></div>
+      <div><h5>Defects</h5><dl id="sheetDefects"></dl></div>
+      <div><h5>Moving on</h5><dl>
+        <dt><kbd>B</kbd></dt><dd>Go to BRT</dd>
+        <dt><kbd>Y</kbd>/<kbd>N</kbd></dt><dd>Save / discard when leaving</dd>
+        <dt><kbd>M</kbd></dt><dd>Laser on/off</dd>
+        <dt><kbd>Z</kbd></dt><dd>Zero (empty plate only)</dd>
+      </dl>
+      <h5 style="margin-top:14px">BRT screen</h5><dl>
+        <dt><kbd>T</kbd></dt><dd>Tare with fish hanging</dd>
+        <dt><kbd>Space</kbd></dt><dd>Start / stop</dd>
+        <dt><kbd>S</kbd></dt><dd>Save</dd>
+        <dt><kbd>C</kbd></dt><dd>Reset</dd>
+        <dt><kbd>H</kbd></dt><dd>Back to samples</dd>
+      </dl></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SUPERVISOR ================= -->
+<div class="supbanner">
+  <span class="eyebrow">Supervisor only</span>
+  <h2>Setup &amp; calibration</h2>
+  <p>The following screens change how every lot is measured. Use them only if you are trained to, and write down what you changed.</p>
+</div>
+
+<section id="config">
+  <h2><span class="n">12</span>Configuration <span class="who sup">Supervisor</span></h2>
+  <p>Press <b>Configuration</b> (top-right, on any screen with the top bar).</p>
+  <div class="two">
+    <figure><div class="shot"><img src="img/70-config.jpg" alt="Configuration page, top" loading="lazy" width="1600" height="900"></div></figure>
+    <figure><div class="shot"><img src="img/70b-config-bottom.jpg" alt="Configuration page, bottom" loading="lazy" width="1600" height="900"></div></figure>
+  </div>
+  <div class="tbl" id="config-menu"><table>
+    <thead><tr><th>Group</th><th>Item</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>Lots Information</td><td>List of lots · Export data</td><td>Lot list; Excel and PDF downloads.</td></tr>
+      <tr><td>Load Cell</td><td>Calibrate · Calibration History</td><td>Guided calibration of the plate or the BRT hook; record of past calibrations.</td></tr>
+      <tr><td>Quality Criteria</td><td>Acceptable Length Ranges</td><td>Min/max length per can size.</td></tr>
+      <tr><td>Vision parameters</td><td>Calibrate ZOI · Calibrate Length</td><td>Camera zone of interest; pixels-to-millimetres.</td></tr>
+      <tr><td>Fish Parameters</td><td>Fish Species Configuration</td><td>Measurement parameters per species and type.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="calibration">
+  <h2><span class="n">13</span>Scale calibration <span class="who sup">Supervisor</span></h2>
+  <p>Calibrate the plate when the empty reading drifts by more than 20 g, after moving the station, after any repair, and when a known weight reads wrong. You need the <b>1000 g reference weight</b> and an empty plate.</p>
+  <div class="flip" data-flip id="cal-wizard">
+    <div class="stage">
+      <img src="img/80-cal-choose.jpg" alt="" data-cap="Configuration → Calibrate. Choose Fish Weight (the plate) or Belly Resistance (the BRT hook).">
+      <img src="img/81-cal-step0.jpg" alt="" data-cap="Step 0: Click Next to start the calibration.">
+      <img src="img/82-cal-busy1.jpg" alt="" data-cap="While the transmitter works, the dialog says “Waiting for the transmitter…”. Don't touch the plate.">
+      <img src="img/82-cal-step1.jpg" alt="" data-cap="Step 1: leave only the permanent fixture on the scale, wait for stability, press Next. This sets zero.">
+      <img src="img/82-cal-step2.jpg" alt="" data-cap="Step 2: put the 1000 g reference weight in the centre, wait for stability, press Next.">
+      <img src="img/82-cal-step3.jpg" alt="" data-cap="Step 3: reference accepted. Keep the weight in place and press Save.">
+      <img src="img/82-cal-step4.jpg" alt="" data-cap="Done: “Calibration saved and verified”. It is added to the Calibration History.">
+    </div>
+    <div class="bar"><button type="button" data-prev>◀ Back</button><button type="button" data-play>Play</button><button type="button" data-next>Next ▶</button><div class="dots"></div></div>
+    <p class="cap"></p>
+  </div>
+  <figure id="cal-video">
+    <video src="media/calibration-wizard.mp4" poster="media/calibration-poster.jpg" controls muted playsinline preload="none"></video>
+    <figcaption>The wizard from start to finish. Recorded in a dry run: no command reached the scale.</figcaption>
+  </figure>
+  <div class="note warn" id="cal-cancel"><span>Don't cancel halfway unless you must. Cancelling ends the session but does not undo what the transmitter already applied; run the full calibration again afterwards.</span></div>
+  <div class="note info" id="cal-net"><span>If the wizard stops with “The transmitter is showing NET weight”, a tare was set from the transmitter's own keypad. Press <b>Disable tare</b> in the dialog, then start again.</span></div>
+  <h3 id="cal-after">After calibrating</h3>
+  <ol class="steps">
+    <li><div><b class="t">Check zero</b><span>Empty plate: 0 g, green.</span></div></li>
+    <li><div><b class="t">Check the reference</b><span>Put the 1000 g weight in the centre: 1000 g ±1 g.</span></div></li>
+    <li><div><b class="t">Check the corners</b><span>The same weight on each corner of the plate should read within 2 g.</span></div></li>
+  </ol>
+</section>
+
+<section id="vision">
+  <h2><span class="n">14</span>Camera zone &amp; length <span class="who sup">Supervisor</span></h2>
+  <div class="two">
+    <figure id="vision-zoi">
+      <div class="shot"><img src="img/74-zoi.jpg" alt="ZOI 2-point calibration" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Calibrate ZOI</b>: click the top-left and then the bottom-right corner of the area where fish lie, then <b>Calibrate</b>. Only this zone is analysed.</figcaption>
+    </figure>
+    <figure id="vision-length">
+      <div class="shot"><img src="img/75-length.jpg" alt="Length calibration" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Calibrate Length</b>: place a ruler or a reference object, mark both ends (arrow keys move a point, <kbd>Shift</kbd> moves it faster, <kbd>Enter</kbd> confirms), type the real distance in mm, press <b>Calibrate</b>.</figcaption>
+    </figure>
+  </div>
+  <div class="note tip"><span>Recalibrate length whenever the camera or the plate is moved. Check it by measuring an object of known length as a sample.</span></div>
+</section>
+
+<section id="criteria">
+  <h2><span class="n">15</span>Size ranges &amp; species <span class="who sup">Supervisor</span></h2>
+  <div class="two">
+    <figure id="criteria-ranges">
+      <div class="shot"><img src="img/73-size-ranges.jpg" alt="Acceptable length ranges per size" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Acceptable Length Ranges</b>: min and max length (cm) per can size. Samples outside the range are reported as out of spec. <b>Save</b> applies them to new samples.</figcaption>
+    </figure>
+    <figure id="criteria-params">
+      <div class="shot"><img src="img/76-fish-params.jpg" alt="Fish species parameters" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Fish Parameters</b>: pick species and type to see and change the measuring parameters. <b>Reset</b> restores the original values before you update.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="export">
+  <h2><span class="n">16</span>Export &amp; history <span class="who sup">Supervisor</span></h2>
+  <div class="two">
+    <figure id="export-data">
+      <div class="shot"><img src="img/71-export.jpg" alt="Export data list" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Export data</b>: green icon for Excel, red icon for the FFA PDF report, for any lot.</figcaption>
+    </figure>
+    <figure id="export-history">
+      <div class="shot"><img src="img/72-cal-history.jpg" alt="Calibration history" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Calibration History</b>: every completed calibration, for the plate or the hook, with date and time.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="kiosk">
+  <h2><span class="n">17</span>Kiosk maintenance <span class="who sup">Technician</span></h2>
+  <p>The station screen is locked to the FFA application: Alt+F4, the Windows key and Ctrl+Alt+T do nothing, and if the window is closed it reopens. To work on the desktop, connect by SSH and run:</p>
+  <div class="tbl" id="kiosk-cmds"><table>
+    <thead><tr><th>Command</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td class="code">~/.local/bin/ffa-kiosk-stop</td><td>Closes the kiosk until the next restart.</td></tr>
+      <tr><td class="code">sudo reboot</td><td>Restarts; the kiosk comes back by itself.</td></tr>
+      <tr><td class="code">~/Documents/FFA-complete-project/ffa-app/tools/kiosk/install.sh --uninstall</td><td>Removes the kiosk and restores the normal desktop.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</div>
+</main>
+
+<script>
+(() => {
+  // Same map as the station (user-interface/src/config/index.js).
+  const DEFECTS = [
+    ["1","BB","Broken Belly"],["2","SBB","Slight Broken Belly"],["3","HD","Heavy Damage"],["4","M","Mashed"],["5","S","Soft"],
+    ["6","LD","Light Damage"],["7","OS","Other Species (Sm)"],["8","OS2","Other Species (Other)"],["9","O2","Oxidation"],["0","AN","Anisakis"],
+    ["-","OSM","Off Smell"],["Tab","ST","Spike"],["Shift","GR","Guts and Roes"],["Esc","GC","Gill cut"],["Ctrl","SC","Oblique cut"],["Caps","T","Tail"],
+  ];
+  const ACTIONS = {
+    Space: ["Capture", "Waits for the confirmed weight, then captures photo, weight and defects."],
+    C: ["Cancel", "Discards the captured sample that isn't saved yet."],
+    E: ["Other finding", "Extra photo for the lot. Y saves, C cancels.", "Extra"],
+    B: ["Belly Resistance Test", "Saves the last sample and opens BRT.", "BRT"],
+    M: ["Laser", "Switches the laser cross on or off."],
+    Z: ["Zero", "Empty plate only: sets the reading to 0 g."],
+    T: ["Tare", "Subtracts what is on the plate now. Only when told to."],
+  };
+  const dmap = Object.fromEntries(DEFECTS.map(([k, c, n]) => [k, [c, n]]));
+
+  const rows = [
+    [["Esc",1.2],"F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12"],
+    ["`","1","2","3","4","5","6","7","8","9","0","-","=",["⌫",1.8]],
+    [["Tab",1.5],"Q","W","E","R","T","Y","U","I","O","P","[","]",["\\",1.3]],
+    [["Caps",1.8],"A","S","D","F","G","H","J","K","L",";","'",["Enter",2]],
+    [["Shift",2.3],"Z","X","C","V","B","N","M",",",".","/",["Shift",2.5]],
+    [["Ctrl",1.5],["Win",1.2],["Alt",1.2],["Space",6.6],["Alt",1.2],["Ctrl",1.5]],
+  ];
+  const kb = document.getElementById("kb"), info = document.getElementById("kbinfo");
+  const show = (btn, key) => {
+    kb.querySelectorAll(".sel").forEach((b) => b.classList.remove("sel"));
+    btn.classList.add("sel");
+    const big = info.querySelector(".big"), nm = info.querySelector(".nm"), ds = info.querySelector(".ds");
+    if (dmap[key]) { big.textContent = dmap[key][0]; big.style.color = "var(--defect)"; nm.textContent = dmap[key][1] + " · defect"; ds.textContent = "Key " + key + " toggles this defect light for the fish on the plate."; }
+    else { big.textContent = key; big.style.color = "var(--accent)"; nm.textContent = ACTIONS[key][0]; ds.textContent = ACTIONS[key][1]; }
+  };
+  rows.forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.gridTemplateColumns = r.map((k) => (Array.isArray(k) ? k[1] : 1) + "fr").join(" ");
+    r.forEach((k) => {
+      const key = Array.isArray(k) ? k[0] : k;
+      const b = document.createElement("button");
+      b.type = "button";
+      if (dmap[key]) { b.className = "d"; b.innerHTML = key + "<small>" + dmap[key][0] + "</small>"; }
+      else if (ACTIONS[key]) { b.className = "a"; b.innerHTML = key + "<small>" + (ACTIONS[key][2] || ACTIONS[key][0]) + "</small>"; }
+      else { b.className = "x"; b.textContent = key; b.tabIndex = -1; b.setAttribute("aria-hidden", "true"); }
+      if (dmap[key] || ACTIONS[key]) {
+        b.addEventListener("mouseenter", () => show(b, key));
+        b.addEventListener("focus", () => show(b, key));
+        b.addEventListener("click", () => show(b, key));
+      }
+      row.appendChild(b);
+    });
+    kb.appendChild(row);
+  });
+
+  const kbd = (k) => "<kbd>" + k + "</kbd>";
+  document.getElementById("defTable").innerHTML = DEFECTS.map(([k, c, n]) => `<tr><td>${kbd(k)}</td><td class="code">${c}</td><td>${n}</td></tr>`).join("");
+  document.getElementById("sheetDefects").innerHTML = DEFECTS.map(([k, c, n]) => `<dt>${kbd(k)}</dt><dd>${c} · ${n}</dd>`).join("");
+
+  // Flipbooks: step-by-step image sequences.
+  document.querySelectorAll("[data-flip]").forEach((f) => {
+    const imgs = [...f.querySelectorAll(".stage img")], dots = f.querySelector(".dots"), cap = f.querySelector(".cap"), play = f.querySelector("[data-play]");
+    let i = 0, timer = null;
+    imgs.forEach(() => dots.appendChild(document.createElement("span")));
+    const go = (n) => {
+      i = (n + imgs.length) % imgs.length;
+      imgs.forEach((im, j) => im.classList.toggle("on", j === i));
+      [...dots.children].forEach((d, j) => d.classList.toggle("on", j === i));
+      cap.innerHTML = `<b>${i + 1}/${imgs.length}</b>` + imgs[i].dataset.cap;
+    };
+    const stop = () => { clearInterval(timer); timer = null; play.textContent = "Play"; };
+    f.querySelector("[data-prev]").addEventListener("click", () => { stop(); go(i - 1); });
+    f.querySelector("[data-next]").addEventListener("click", () => { stop(); go(i + 1); });
+    play.addEventListener("click", () => {
+      if (timer) return stop();
+      play.textContent = "Pause";
+      timer = setInterval(() => go(i + 1), 2800);
+    });
+    f._go = (n) => { stop(); go(n); };
+    go(0);
+  });
+
+  // Index: highlight the section and topic in view, open its topics; drawer on phones.
+  const side = document.getElementById("side");
+  const secLinks = [...document.querySelectorAll("#toc ol > li > a")];
+  const topLinks = [...document.querySelectorAll("#toc .topics a")];
+  const secById = Object.fromEntries(secLinks.map((a) => [a.hash.slice(1), a]));
+  const openSection = (a) => {
+    secLinks.forEach((x) => { x.classList.toggle("on", x === a); x.parentElement.classList.toggle("open", x === a); });
+    if (!side.classList.contains("searching")) a.scrollIntoView({ block: "nearest" });
+  };
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const sec = e.target.closest("section");
+      const a = sec && secById[sec.id];
+      if (a && !a.classList.contains("on")) openSection(a);
+      if (e.target.tagName !== "SECTION") {
+        topLinks.forEach((t) => t.classList.toggle("on", t.hash === "#" + e.target.id && t.closest("li.open") !== null));
+      }
+    });
+  }, { rootMargin: "-20% 0px -70% 0px" });
+  new Set([...secLinks, ...topLinks].map((a) => a.hash.slice(1))).forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+
+  const menuBtn = document.getElementById("menuBtn");
+  const setMenu = (open) => { document.body.classList.toggle("menu", open); menuBtn.setAttribute("aria-expanded", open); };
+  menuBtn.addEventListener("click", () => setMenu(!document.body.classList.contains("menu")));
+
+  // Jump to a place in the manual and flash it so the eye finds it.
+  const land = (el, frame) => {
+    if (!el) return;
+    const flip = el.closest("[data-flip]");
+    if (flip && frame != null) flip._go(frame);
+    const box = el.closest("tr, li, .note, figure, .flip, .tbl, .kbwrap, h3, p") || el;
+    box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    box.classList.remove("hit"); void box.offsetWidth; box.classList.add("hit");
+    setMenu(false);
+  };
+  document.querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener("click", (ev) => {
+    const el = document.getElementById(a.hash.slice(1));
+    if (!el) return;
+    ev.preventDefault();
+    history.replaceState(null, "", a.hash);
+    if (el.tagName === "SECTION") { el.scrollIntoView({ block: "start" }); setMenu(false); }
+    else land(el);
+  }));
+
+  // ---------- search ----------
+  // Every readable block of the manual becomes an entry; index entries add their keywords.
+  const norm = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const clean = (t) => t.replace(/\s+/g, " ").trim();
+  const secTitle = (sec) => {
+    const h = sec.querySelector("h2");
+    return h ? h.querySelector(".n").textContent + " · " + clean(h.textContent.replace(h.querySelector(".n").textContent, "").replace(/Supervisor|Technician/, "")) : "";
+  };
+  const entries = [];
+  const byEl = new Map();
+  // inherited: the title is only the heading above the block, so the block must match by its own text.
+  const add = (el, title, text, keys, rank, frame, inherited) => {
+    const sec = el.closest("section");
+    if (!sec || sec.id === "top") return;
+    // A block that already has an index topic enriches that topic instead of showing twice.
+    const topic = frame == null && byEl.get(el);
+    if (topic) {
+      if (!topic.text) topic.text = clean(text);
+      topic.hay += " " + norm(title + " " + text);
+      return;
+    }
+    const e = { el, frame, where: secTitle(sec), title: clean(title), text: clean(text), hay: norm(title + " " + text + " " + (keys || "")), t: norm(title), k: norm(keys || ""), rank, own: inherited ? norm(text) : null };
+    if (rank === 3) byEl.set(el, e);
+    entries.push(e);
+  };
+  topLinks.concat(secLinks).forEach((a) => {
+    const el = document.getElementById(a.hash.slice(1));
+    if (el) add(el, a.textContent.replace(/^\d\d/, ""), "", a.dataset.k, a.closest(".topics") ? 3 : 2);
+  });
+  const col = document.querySelector("main .col");
+  const nearestHeading = (el) => {
+    const sec = el.closest("section");
+    let best = null;
+    sec.querySelectorAll("h3").forEach((h) => { if (h.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) best = h; });
+    return best ? clean(best.textContent) : secTitle(sec).replace(/^\d\d · /, "");
+  };
+  col.querySelectorAll("h3").forEach((h) => add(h, h.textContent, "", "", 2));
+  // Topics that point at a heading or figure also carry the text right after it.
+  topLinks.forEach((a) => {
+    const el = document.getElementById(a.hash.slice(1)), e = byEl.get(el);
+    if (e && !e.text && el.tagName === "H3") { const n = el.nextElementSibling; if (n && n.tagName === "P") e.text = clean(n.innerText); }
+  });
+  col.querySelectorAll("section p:not(.cap), section .steps > li, section .legend li, section tbody tr, section figcaption, section .note, section .placeholder, section .sheet dd")
+    .forEach((el) => {
+      if (el.closest(".kbinfo")) return;
+      let text = el.innerText || el.textContent;
+      if (el.tagName === "DD") text = el.previousElementSibling.textContent + " " + text;
+      const strongTitle = el.matches(".steps > li, tr");
+      let title = el.matches(".steps > li") ? el.querySelector("b.t").innerText : el.matches("tr") ? el.cells[0].textContent : nearestHeading(el);
+      // Key tables: "Tab" alone says little, "Tab · ST" does.
+      if (el.matches("tr") && title.trim().length < 8 && el.cells[1]) title += " · " + el.cells[1].textContent;
+      // Steps repeat their bold title in the text; show only what follows it.
+      if (el.matches(".steps > li") && text.startsWith(title)) text = text.slice(title.length);
+      add(el, title, text, "", 1, null, !strongTitle);
+    });
+  col.querySelectorAll("[data-flip]").forEach((f) => f.querySelectorAll(".stage img").forEach((im, n) =>
+    add(f, nearestHeading(f) + " · step " + (n + 1), im.dataset.cap, "", 1, n, true)));
+
+  const q = document.getElementById("q"), results = document.getElementById("results");
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const mark = (t, words) => {
+    let html = esc(t);
+    words.forEach((w) => {
+      const re = new RegExp("(" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+      html = html.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(re, "<mark>$1</mark>"));
+    });
+    return html;
+  };
+  const snippet = (t, words) => {
+    if (!t) return "";
+    const low = norm(t);
+    const first = Math.min(...words.map((w) => { const i = low.indexOf(w); return i < 0 ? Infinity : i; }));
+    const at = first === Infinity ? 0 : Math.max(0, first - 50);
+    const cut = (at > 0 ? "…" : "") + t.slice(at, at + 150) + (at + 150 < t.length ? "…" : "");
+    return mark(cut, words);
+  };
+  let shown = [], sel = 0;
+  const select = (n) => {
+    sel = n;
+    [...results.querySelectorAll("a")].forEach((a, i) => a.classList.toggle("sel", i === sel));
+    results.querySelectorAll("a")[sel]?.scrollIntoView({ block: "nearest" });
+  };
+  const search = () => {
+    const words = norm(q.value).split(" ").filter(Boolean);
+    side.classList.toggle("searching", words.length > 0);
+    results.hidden = !words.length;
+    if (!words.length) { results.innerHTML = ""; return; }
+    const seen = new Set();
+    shown = entries
+      .filter((e) => words.every((w) => e.hay.includes(w)) && (e.own == null || words.some((w) => e.own.includes(w))))
+      .map((e) => ({ e, score: e.rank * 10 + words.reduce((s, w) => s + (e.t.includes(w) ? 8 : 0) + (e.k.includes(w) ? 4 : 0) + (e.t.startsWith(w) ? 3 : 0), 0) - e.text.length / 400 }))
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.e)
+      .filter((e) => { const key = e.el.id + "|" + e.title + "|" + e.text.slice(0, 40); if (seen.has(key)) return false; seen.add(key); return true; })
+      .slice(0, 40);
+    if (!shown.length) {
+      results.innerHTML = `<div class="none"><span>Nothing found for “${esc(q.value.trim())}”. Try one word, e.g. <b>beep</b>, <b>tare</b> or <b>report</b>.</span><button type="button" id="clearQ">Clear search</button></div>`;
+      document.getElementById("clearQ").addEventListener("click", () => { q.value = ""; search(); q.focus(); });
+      return;
+    }
+    results.innerHTML = `<div class="count">${shown.length === 40 ? "40+" : shown.length} result${shown.length === 1 ? "" : "s"}</div>` +
+      shown.map((e, i) => `<a href="#" data-i="${i}"><span class="where">${esc(e.where)}</span><span class="what">${mark(e.title, words)}</span>${e.text && norm(e.text) !== norm(e.title) ? `<span class="snip">${snippet(e.text, words)}</span>` : ""}</a>`).join("");
+    results.querySelectorAll("a").forEach((a) => {
+      a.addEventListener("click", (ev) => { ev.preventDefault(); select(+a.dataset.i); const e = shown[+a.dataset.i]; land(e.el, e.frame); });
+    });
+    select(0);
+  };
+  q.addEventListener("input", search);
+  q.addEventListener("keydown", (ev) => {
+    if (ev.key === "ArrowDown" && shown.length) { ev.preventDefault(); select(Math.min(sel + 1, shown.length - 1)); }
+    else if (ev.key === "ArrowUp" && shown.length) { ev.preventDefault(); select(Math.max(sel - 1, 0)); }
+    else if (ev.key === "Enter" && shown[sel]) { ev.preventDefault(); land(shown[sel].el, shown[sel].frame); }
+    else if (ev.key === "Escape") { q.value = ""; search(); }
+  });
+  const focusSearch = () => { setMenu(true); q.focus(); q.select(); };
+  document.getElementById("searchBtn").addEventListener("click", focusSearch);
+  document.addEventListener("keydown", (ev) => {
+    const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+    if ((ev.key === "/" && !typing) || ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k")) { ev.preventDefault(); focusSearch(); }
+  });
+})();
+</script>
+
+</body></html>
