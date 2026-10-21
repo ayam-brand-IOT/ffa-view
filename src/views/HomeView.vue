@@ -235,8 +235,8 @@ export default {
       stable: false,
       faults: [],
       ok: true,
-      // Confirmed by the backend (scale_ready.py): several readings agreeing
-      // within two divisions (median kept). The buzzer beeps on this value.
+      // Confirmed by the backend (scale_ready.py): consecutive readings agreeing
+      // within a division (median kept). The buzzer beeps on this value.
       ready: false,
       readyValue: null,
     },
