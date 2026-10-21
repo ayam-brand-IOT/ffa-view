@@ -235,8 +235,8 @@ export default {
       stable: false,
       faults: [],
       ok: true,
-      // Confirmed by the backend (scale_ready.py): several stable readings
-      // agreeing within a division. The buzzer beeps on this same value.
+      // Confirmed by the backend (scale_ready.py): several readings agreeing
+      // within two divisions (median kept). The buzzer beeps on this value.
       ready: false,
       readyValue: null,
     },
@@ -317,7 +317,7 @@ export default {
               this.debounceRequested = false;
               this.notify("Weight never stabilized, capture aborted", "error");
             }
-          }, 4000);
+          }, 6000);
           break;
         case "CANCEL":
           this.cancel();
