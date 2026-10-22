@@ -131,8 +131,8 @@ export default {
         key: "image",
       },
       { title: "Weight", key: "weight" },
-      { title: "Length", key: "length" },
-      { title: "Height", key: "height" },
+      { title: "Length (mm)", key: "length" },
+      { title: "Height (mm)", key: "height" },
       {
         title: "",
         align: "end",

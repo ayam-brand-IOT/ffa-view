@@ -15,7 +15,8 @@
           </v-card-title>
           <v-card-text>
             <p class="mb-4 text-medium-emphasis">
-              Set the minimum and maximum acceptable length (cm) for each size.
+              Set the minimum and maximum acceptable length (mm) for each size, the
+              same unit as the length measured from the image.
               When a new sample is saved, it is marked as in/out of spec based on
               the range for its lot's size.
             </p>
@@ -45,7 +46,7 @@
                       v-model.number="ranges[size].length_min"
                       label="Min length"
                       type="number"
-                      suffix="cm"
+                      suffix="mm"
                       variant="underlined"
                       :rules="[rangeRule(size)]"
                       hide-details="auto"
@@ -56,7 +57,7 @@
                       v-model.number="ranges[size].length_max"
                       label="Max length"
                       type="number"
-                      suffix="cm"
+                      suffix="mm"
                       variant="underlined"
                       :rules="[rangeRule(size)]"
                       hide-details="auto"
