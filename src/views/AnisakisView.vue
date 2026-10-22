@@ -22,52 +22,10 @@
             </v-card-title>
 
             <v-card-text class="pa-4">
-              <!-- Sample size: drives every prevalence figure, so it leads. -->
-              <div class="sample-size">
-                <div class="sample-size__text">
-                  <label class="field-label" for="fish-analyzed">
-                    Fish analyzed
-                  </label>
-                  <p class="field-hint">
-                    How many pieces this inspection covers. Usually 10.
-                  </p>
-                </div>
-                <div class="counter">
-                  <v-btn
-                    icon="mdi-minus"
-                    variant="tonal"
-                    density="comfortable"
-                    aria-label="One fewer fish analyzed"
-                    :disabled="form.fish_analyzed <= 1"
-                    @click="bump('fish_analyzed', -1)"
-                  />
-                  <v-text-field
-                    id="fish-analyzed"
-                    v-model.number="form.fish_analyzed"
-                    class="counter__field"
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    variant="outlined"
-                    density="comfortable"
-                    hide-details
-                    @blur="sanitize('fish_analyzed', 1)"
-                  />
-                  <v-btn
-                    icon="mdi-plus"
-                    variant="tonal"
-                    density="comfortable"
-                    aria-label="One more fish analyzed"
-                    @click="bump('fish_analyzed', 1)"
-                  />
-                </div>
-              </div>
-
-              <v-divider class="my-4" />
-
-              <!-- One block per site: the two counts that produce that site's
+              <!-- One block per site: the three counts that produce that site's
                    numbers sit together, so the relation is visible while
-                   counting instead of only in the report. -->
+                   counting instead of only in the report. QA inspects each
+                   site on its own sample, so each has its own fish analyzed. -->
               <fieldset
                 v-for="site in sites"
                 :key="site.key"
@@ -83,6 +41,7 @@
                 <div class="site__counts">
                   <div
                     v-for="row in [
+                      { key: site.analyzedKey, label: 'Fish analyzed', unit: 'fish' },
                       { key: site.fishKey, label: 'Fish with anisakis', unit: 'fish' },
                       { key: site.foundKey, label: 'Anisakis found', unit: 'parasites' },
                     ]"
@@ -157,7 +116,7 @@
                   <v-icon size="18" class="mr-2">{{ site.icon }}</v-icon>
                   <span class="result__name">{{ site.label }}</span>
                   <span class="result__counts">
-                    {{ form[site.fishKey] }} / {{ form.fish_analyzed }} fish ·
+                    {{ form[site.fishKey] }} / {{ form[site.analyzedKey] }} fish ·
                     {{ form[site.foundKey] }} found
                   </span>
                 </div>
@@ -247,14 +206,16 @@ import { mapState, mapGetters } from "vuex";
 import LotStepper from "@/components/LotStepper.vue";
 import pushNotification from "@/components/pushNotification.vue";
 
-// Where the parasite was found. Each site owns two counts: how many fish
-// carried anisakis there, and how many anisakis were counted in total.
+// Where the parasite was found. Each site owns three counts: how many fish
+// were inspected there, how many carried anisakis there, and how many
+// anisakis were counted in total.
 const SITES = [
   {
     key: "guts",
     label: "Guts",
     icon: "mdi-stomach",
     hint: "Viscera",
+    analyzedKey: "fish_analyzed_guts",
     fishKey: "fish_with_guts",
     foundKey: "presence_guts",
   },
@@ -263,6 +224,7 @@ const SITES = [
     label: "Belly",
     icon: "mdi-fish",
     hint: "Belly flaps and cavity wall",
+    analyzedKey: "fish_analyzed_belly",
     fishKey: "fish_with_belly",
     foundKey: "presence_belly",
   },
@@ -271,6 +233,7 @@ const SITES = [
     label: "Embedded",
     icon: "mdi-bullseye",
     hint: "Inside the muscle",
+    analyzedKey: "fish_analyzed_embedded",
     fishKey: "fish_with_embedded",
     foundKey: "presence_embedded",
   },
@@ -285,7 +248,10 @@ export default {
   data: () => ({
     sites: SITES,
     form: {
-      fish_analyzed: 10,
+      // Usually 10 per site.
+      fish_analyzed_guts: 10,
+      fish_analyzed_belly: 10,
+      fish_analyzed_embedded: 10,
       fish_with_guts: 0,
       fish_with_belly: 0,
       fish_with_embedded: 0,
@@ -307,8 +273,8 @@ export default {
     // Same formulas the server applies on save, mirrored here so the operator
     // sees the outcome while counting rather than after committing.
     metrics() {
-      const analyzed = this.form.fish_analyzed;
       return SITES.reduce((acc, site) => {
+        const analyzed = this.form[site.analyzedKey];
         const infected = this.form[site.fishKey];
         const found = this.form[site.foundKey];
         acc[site.key] = {
@@ -325,7 +291,10 @@ export default {
       return this.saveState === "unsaved";
     },
     canSave() {
-      return this.form.fish_analyzed > 0 && this.saveState !== "saved";
+      return (
+        SITES.some((site) => this.form[site.analyzedKey] > 0) &&
+        this.saveState !== "saved"
+      );
     },
     saveMessage() {
       if (this.saveState === "saved") return "Saved for this lot";
@@ -349,8 +318,7 @@ export default {
       return this.form[site.fishKey] > 0 || this.form[site.foundKey] > 0;
     },
     bump(key, delta) {
-      const floor = key === "fish_analyzed" ? 1 : 0;
-      this.form[key] = Math.max(floor, (Number(this.form[key]) || 0) + delta);
+      this.form[key] = Math.max(0, (Number(this.form[key]) || 0) + delta);
     },
     // Typed input can leave the field empty or negative; clamp on blur rather
     // than fighting the operator mid-keystroke.
@@ -378,10 +346,11 @@ export default {
     // infected fish, means a miscount. Warn without blocking: the operator is
     // often mid-tally and the server accepts whatever is finally saved.
     warningFor(site) {
+      const analyzed = this.form[site.analyzedKey];
       const infected = this.form[site.fishKey];
       const found = this.form[site.foundKey];
-      if (infected > this.form.fish_analyzed) {
-        return `More fish with anisakis (${infected}) than fish analyzed (${this.form.fish_analyzed}).`;
+      if (infected > analyzed) {
+        return `More fish with anisakis (${infected}) than fish analyzed (${analyzed}).`;
       }
       if (infected > 0 && found < infected) {
         return `Only ${found} anisakis for ${infected} infected fish — each infected fish has at least one.`;
@@ -443,25 +412,6 @@ $ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   letter-spacing: 0.01em;
   color: rgba(0, 0, 0, 0.78);
   margin-bottom: 4px;
-}
-
-.field-hint {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: rgba(0, 0, 0, 0.66);
-}
-
-.sample-size {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  &__text {
-    min-width: 200px;
-    flex: 1 1 220px;
-  }
 }
 
 .counter {
@@ -533,7 +483,7 @@ $ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   &__counts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px 24px;
     margin-top: 4px;
   }
