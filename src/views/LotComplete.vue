@@ -29,6 +29,23 @@
         <v-divider />
 
         <v-list-item
+          prepend-icon="mdi-file-eye"
+          title="Preview FFA Report"
+          subtitle="Open the quality control report here"
+          color="error"
+          @click="previewPdf"
+          rounded="lg"
+          active-color="error"
+          class="mb-1"
+        >
+          <template #append>
+            <v-icon color="error">mdi-eye</v-icon>
+          </template>
+        </v-list-item>
+
+        <v-divider />
+
+        <v-list-item
           prepend-icon="mdi-file-pdf-box"
           title="Download FFA Report"
           subtitle="Full quality control report as .pdf"
@@ -74,18 +91,34 @@
         </v-list-item>
       </v-list>
     </v-card>
+
+    <pdf-preview-dialog
+      v-model="previewOpen"
+      :blob="pdfBlob"
+      :loading="downloadingPdf"
+      :error="pdfError"
+      :title="`FFA Report · Lot #${lotNo}`"
+      @download="downloadPdf"
+    />
   </v-container>
 </template>
 
 <script>
 import config from "@/config";
 import { mapGetters } from "vuex";
+import PdfPreviewDialog from "@/components/PdfPreviewDialog.vue";
 
 export default {
   name: "LotComplete",
+  components: { PdfPreviewDialog },
   data: () => ({
     downloading: false,
     downloadingPdf: false,
+    previewOpen: false,
+    // The report is built once and reused by the preview and the download.
+    pdfBlob: null,
+    pdfUrl: null,
+    pdfError: null,
   }),
   computed: {
     ...mapGetters(["getAnalyzingLotNo"]),
@@ -115,25 +148,37 @@ export default {
         this.downloading = false;
       }
     },
-    async downloadPdf() {
+    async loadPdf() {
+      if (this.pdfBlob) return this.pdfBlob;
       this.downloadingPdf = true;
+      this.pdfError = null;
       try {
         const response = await fetch(
           `${this.url}:${this.url_port}/download-lot-report/${this.lotNo}`
         );
         if (!response.ok) throw new Error("Download failed");
-        const blob = await response.blob();
-        const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${date}_${this.lotNo}.pdf`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        this.pdfBlob = new Blob([await response.blob()], { type: "application/pdf" });
+        this.pdfUrl = URL.createObjectURL(this.pdfBlob);
+        return this.pdfBlob;
       } catch (error) {
         console.error(error);
+        this.pdfError = "Could not generate the report. Try again.";
+        return null;
       } finally {
         this.downloadingPdf = false;
       }
+    },
+    previewPdf() {
+      this.previewOpen = true;
+      this.loadPdf();
+    },
+    async downloadPdf() {
+      if (!(await this.loadPdf())) return;
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const link = document.createElement("a");
+      link.href = this.pdfUrl;
+      link.download = `${date}_${this.lotNo}.pdf`;
+      link.click();
     },
     goToLogs() {
       this.$router.push("/log");
@@ -142,6 +187,9 @@ export default {
       this.$store.dispatch("setAnalyzingLot", null);
       this.$router.push("/");
     },
+  },
+  beforeUnmount() {
+    if (this.pdfUrl) URL.revokeObjectURL(this.pdfUrl);
   },
 };
 </script>
