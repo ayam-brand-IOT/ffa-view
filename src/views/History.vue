@@ -39,11 +39,6 @@
           </div>
 
           <div class="mb-3 ml-4">
-            <h3>Size: </h3>
-            {{ analyzing_lot.size }}
-          </div>
-
-          <div class="mb-3 ml-4">
             <h3>Order no:</h3>
             {{ analyzing_lot.order_no }}
           </div>
@@ -65,6 +60,7 @@
         <v-card class="pa-4">
           <v-window v-model="tab">
             <v-window-item value="1">
+              <size-breakdown :samples="muestras" class="mb-3" />
               <v-row>
                 <v-col>
                   <v-data-table
@@ -81,6 +77,16 @@
                         contain
                       >
                       </v-img>
+                    </template>
+                    <template v-slot:item.size="{ item }">
+                      <v-chip
+                        v-if="(item.raw || item).size"
+                        :color="(item.raw || item).size === 'REJECTED' ? 'error' : 'primary'"
+                        size="small"
+                        label
+                      >
+                        {{ (item.raw || item).size }}
+                      </v-chip>
                     </template>
                     <template v-slot:item.actions="{ item }">
                       <v-btn
@@ -117,6 +123,7 @@ import { mapState, mapGetters } from "vuex";
 import selectLot from "@/components/selectLot.vue";
 import requestModal from "@/components/requestModal.vue";
 import BrokenBellyList from "@/components/BrokenBellyList.vue";
+import SizeBreakdown from "@/components/SizeBreakdown.vue";
 
 export default {
   name: "History",
@@ -130,7 +137,8 @@ export default {
         sortable: false,
         key: "image",
       },
-      { title: "Weight", key: "weight" },
+      { title: "Weight (g)", key: "weight" },
+      { title: "Size", key: "size" },
       { title: "Length (mm)", key: "length" },
       { title: "Height (mm)", key: "height" },
       {
@@ -148,6 +156,7 @@ export default {
     selectLot,
     requestModal,
     BrokenBellyList,
+    SizeBreakdown,
   },
   computed: {
     ...mapState(["analyzing_lot"]),

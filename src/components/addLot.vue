@@ -81,15 +81,6 @@
                     label="Type*"
                   ></v-select>
                 </v-col>
-                <v-col cols="12" sm="6">
-                  <v-select
-                    :rules="[required]"
-                    v-model="lot.size"
-                    variant="underlined"
-                    :items="['TALL', 'BIG_OVAL', 'SMALL_OVAL', 'JITNEY', 'CLUB_CAN', 'BUFFET', 'TOWER']"
-                    label="Size*"
-                  ></v-select>
-                </v-col>
                 <v-col cols="12" md="6">
                   <v-autocomplete
                     :rules="[required]"
@@ -189,7 +180,6 @@ export default {
       production_date: null,
       fish_species: null,
       type: null,
-      size: null,
       order_no: null,
       item_code: null,
     },
@@ -207,7 +197,6 @@ export default {
       production_date: null,
       fish_species: null,
       type: null,
-      size: null,
       order_no: null,
       item_code: null,
     }),

@@ -11,6 +11,17 @@
       <span class="text-body-2 text-medium-emphasis">
         &nbsp;·&nbsp; Last: <strong>#{{ last_analysed_id }}</strong>
       </span>
+      <!-- Size the server gave the last fish from its weight -->
+      <v-chip
+        v-if="lastSample"
+        :color="lastSample.size === 'REJECTED' ? 'error' : 'primary'"
+        size="small"
+        variant="flat"
+        class="ml-2"
+        prepend-icon="mdi-fish"
+      >
+        {{ lastSample.size || "No weight" }} · {{ lastSample.weight }} g
+      </v-chip>
 
       <v-chip
         :color="captureStatus.color"
@@ -253,6 +264,7 @@ export default {
     analysis_data: null,
     laser_state: false,
     extraImage: null,
+    lastSample: null,
   }),
   computed: {
     ...mapState(["socket_instance", "last_analysed_id"]),
@@ -489,10 +501,10 @@ export default {
       formData.append("image", file);
       formData.append("lot_no", this.getAnalyzingLotNo);
 
-      this.submitRequest(formData);
+      this.submitRequest(formData, weight);
     },
 
-    async submitRequest(formData) {
+    async submitRequest(formData, weight) {
       axios
         .post(`${this.url}:${this.url_port}/add`, formData, {
           headers: {
@@ -504,6 +516,7 @@ export default {
           (response) => {
             console.log(response.data.id);
             this.$store.dispatch("setLastAnalysedId", response.data.id);
+            this.lastSample = { size: response.data.size, weight };
           },
           (error) => {
             this.confirm = false;

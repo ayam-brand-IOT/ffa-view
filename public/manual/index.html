@@ -308,7 +308,7 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
           <ul class="topics">
             <li><a href="#lots-screen" data-k="lots information green arrow open analyse log blue list">Lot list screen</a></li>
             <li><a href="#lots-add" data-k="create new lot form save">Add a new lot</a></li>
-            <li><a href="#lots-fields" data-k="supplier lot number production date order species type size item code wms sar mack sardine mackerel can">Lot fields explained</a></li>
+            <li><a href="#lots-fields" data-k="supplier lot number production date order species type item code wms sar mack sardine mackerel">Lot fields explained</a></li>
             <li><a href="#lots-screen" data-k="find barcode scanner reader filter">Search a lot / barcode</a></li>
             <li><a href="#lots-reuse" data-k="duplicate reuse unique test lot">Lot number rules</a></li>
           </ul>
@@ -411,9 +411,9 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
             <li><a href="#vision-length" data-k="length ruler millimetres mm pixels">Length calibration</a></li>
           </ul>
         </li>
-        <li><a href="#criteria" data-k="size species"><span class="n">15</span>Size ranges &amp; species</a>
+        <li><a href="#criteria" data-k="size species weight"><span class="n">15</span>Size by weight &amp; species</a>
           <ul class="topics">
-            <li><a href="#criteria-ranges" data-k="length range min max mm millimetres can size out of spec">Acceptable length ranges</a></li>
+            <li><a href="#criteria-ranges" data-k="size weight grams jitney buffet tall rejected predominant cut">Size by weight</a></li>
             <li><a href="#criteria-params" data-k="fish parameters species type reset update">Fish species parameters</a></li>
           </ul>
         </li>
@@ -510,10 +510,10 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
       <tr><td>Order No</td><td>Purchase order, e.g. <code>4799/14</code>.</td></tr>
       <tr><td>Fish species</td><td><code>SAR</code> sardine · <code>MACK</code> mackerel · <code>H-MACK</code>. The camera uses this to measure correctly.</td></tr>
       <tr><td>Type</td><td><code>WR</code> whole round · <code>HG</code> headed &amp; gutted · <code>HGT</code> as stated on the item code.</td></tr>
-      <tr><td>Size</td><td>Can size: <code>TALL</code>, <code>BIG_OVAL</code>, <code>SMALL_OVAL</code>, <code>JITNEY</code>, <code>CLUB_CAN</code>, <code>BUFFET</code>, <code>TOWER</code>. Sets the accepted length range.</td></tr>
       <tr><td>Item Code</td><td>The WMS item code, searchable by code or description.</td></tr>
     </tbody>
   </table></div>
+  <div class="note tip"><span>There is no size to choose: each fish gets its size from its weight when you save it (see <a href="#criteria-ranges">Size by weight</a>).</span></div>
   <div class="note warn" id="lots-reuse"><span>Don't reuse a lot number for a different delivery, and don't create test lots on the production station. Every lot appears in the reports.</span></div>
 </section>
 
@@ -539,7 +539,7 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
   </figure>
   <ul class="legend">
     <li><b>1</b><span><b>Progress</b>: Samples → BRT → Anisakis → Guts Weight.</span></li>
-    <li><b>2</b><span><b>Lot</b> being analysed and the number of the last saved sample.</span></li>
+    <li><b>2</b><span><b>Lot</b> being analysed, the number of the last saved sample and its size from the weight (<code>JITNEY</code>, <code>BUFFET</code>, <code>TALL</code>, or red <code>REJECTED</code>).</span></li>
     <li><b>3</b><span><b>Status</b>: <em>Ready to capture</em>, <em>Processing…</em>, <em>Ready for next sample</em>.</span></li>
     <li><b>4</b><span><b>Live weight</b>. <span class="s-red">Red</span> while settling, <span class="s-green">green</span> when stable.</span></li>
     <li><b>5</b><span><b>Live camera</b> with the laser cross. Lay the fish along the horizontal line.</span></li>
@@ -734,7 +734,8 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
     </figure>
     <ul>
       <li><b>Download Excel</b>: every sample of the lot as an <code>.xlsx</code> sheet.</li>
-      <li><b>Download FFA Report</b>: the full quality-control report as a PDF.</li>
+      <li><b>Preview FFA Report</b>: opens the PDF report on the station screen.</li>
+      <li><b>Download FFA Report</b>: the full quality-control report as a PDF. Its <b>Size Distribution</b> chart shows how many fish were <code>JITNEY</code>, <code>BUFFET</code>, <code>TALL</code> or rejected, and which size predominates.</li>
       <li><b>View Logs</b>: samples, extra photos and BRT results.</li>
       <li><b>Back to Home</b>: the lot list, ready for the next lot.</li>
     </ul>
@@ -829,7 +830,7 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
     <tbody>
       <tr><td>Lots Information</td><td>List of lots · Export data</td><td>Lot list; Excel and PDF downloads.</td></tr>
       <tr><td>Load Cell</td><td>Calibrate · Calibration History</td><td>Guided calibration of the plate or the BRT hook; record of past calibrations.</td></tr>
-      <tr><td>Quality Criteria</td><td>Acceptable Length Ranges</td><td>Min/max length per can size.</td></tr>
+      <tr><td>Quality Criteria</td><td>Size by Weight</td><td>Weight at which each size starts.</td></tr>
       <tr><td>Vision parameters</td><td>Calibrate ZOI · Calibrate Length</td><td>Camera zone of interest; pixels-to-millimetres.</td></tr>
       <tr><td>Fish Parameters</td><td>Fish Species Configuration</td><td>Measurement parameters per species and type.</td></tr>
     </tbody>
@@ -882,11 +883,11 @@ hr.sec { border: 0; border-top: 1px solid var(--line); margin: 0; }
 </section>
 
 <section id="criteria">
-  <h2><span class="n">15</span>Size ranges &amp; species <span class="who sup">Supervisor</span></h2>
+  <h2><span class="n">15</span>Size by weight &amp; species <span class="who sup">Supervisor</span></h2>
   <div class="two">
     <figure id="criteria-ranges">
-      <div class="shot"><img src="img/73-size-ranges.jpg" alt="Acceptable length ranges per size" loading="lazy" width="1600" height="900"></div>
-      <figcaption><b>Acceptable Length Ranges</b>: min and max length (mm, the same unit as the measured length) per can size. Samples outside the range are reported as out of spec. <b>Save</b> applies them to new samples.</figcaption>
+      <div class="shot"><img src="img/73-size-classes.jpg" alt="Size by weight" loading="lazy" width="1600" height="900"></div>
+      <figcaption><b>Size by Weight</b>: each fish gets its size from its weight when it is saved: <code>JITNEY</code> 45–64 g, <code>BUFFET</code> 65–69 g, <code>TALL</code> 70 g and above. Lighter fish are <code>REJECTED</code>. Enter the weight where each size starts; <b>Save</b> applies to fish saved from then on. The report shows how many fish fell in each size and which one predominates, to choose the cuts for production.</figcaption>
     </figure>
     <figure id="criteria-params">
       <div class="shot"><img src="img/76-fish-params.jpg" alt="Fish species parameters" loading="lazy" width="1600" height="900"></div>

@@ -73,7 +73,6 @@ export default {
         production_date: "",
         fish_species: "",
         type: "",
-        size: "",
         order_no: "",
         item_code: "",
       },
@@ -90,7 +89,6 @@ export default {
         production_date: "",
         fish_species: "",
         type: "",
-        size: "",
         order_no: "",
         item_code: "",
       };

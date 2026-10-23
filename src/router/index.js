@@ -10,7 +10,7 @@ import ConfigWrapper from "../views/ConfigWrapper.vue";
 import SelectLot from "@/views/SelectLot.vue";
 import FishParameters from "../views/FishParameters.vue";
 import CalibrationHistory from "../views/CalibrationHistory.vue";
-import SizeRanges from "../views/SizeRanges.vue";
+import SizeClasses from "../views/SizeClasses.vue";
 
 const routes = [
   {
@@ -139,9 +139,9 @@ const routes = [
         component: CalibrationHistory,
       },
       {
-        path: "size-ranges",
-        name: "Size Ranges",
-        component: SizeRanges,
+        path: "size-classes",
+        name: "Size by Weight",
+        component: SizeClasses,
       },
     ],
   },

@@ -124,17 +124,17 @@
           <v-card-text>
             <v-list>
               <v-list-item>
-                <v-list-item-title>Acceptable Length Ranges</v-list-item-title>
+                <v-list-item-title>Size by Weight</v-list-item-title>
                 <v-list-item-subtitle>
-                  Set min/max accepted length per size (TALL, BIG_OVAL, SMALL_OVAL, JITNEY, CLUB_CAN, BUFFET, TOWER)
+                  Weight at which each size starts (JITNEY, BUFFET, TALL); lighter fish are rejected
                 </v-list-item-subtitle>
                 <v-list-item-action class="justify-end">
                   <v-btn
-                    to="/config/size-ranges"
+                    to="/config/size-classes"
                     color="primary"
                     class="buttons"
                   >
-                    <v-icon class="mr-1">mdi-ruler</v-icon>
+                    <v-icon class="mr-1">mdi-scale</v-icon>
                     Manage
                   </v-btn>
                 </v-list-item-action>
