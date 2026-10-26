@@ -1,5 +1,10 @@
 <template>
-  <div class="image-container" @keydown="handleKeyPress" tabindex="0">
+  <div
+    class="image-container"
+    :style="{ aspectRatio: `${frame.width} / ${frame.height}` }"
+    @keydown="handleKeyPress"
+    tabindex="0"
+  >
     <img
       :src="`${url_server}video_feed`"
       alt="Your Image"
@@ -8,18 +13,18 @@
     <div
       v-if="line1Position === null || line2Position == null"
       class="vertical-line"
-      :style="{ left: currentPosition + 'px' }"
+      :style="{ left: pct(currentPosition) }"
     ></div>
     <div class="position-display">X: {{ currentPosition }} px</div>
     <div
       v-if="line1Position !== null"
       class="vertical-line"
-      :style="{ left: line1Position + 'px' }"
+      :style="{ left: pct(line1Position) }"
     ></div>
     <div
       v-if="line2Position !== null"
       class="vertical-line"
-      :style="{ left: line2Position + 'px' }"
+      :style="{ left: pct(line2Position) }"
     ></div>
     <div
       v-if="line1Position !== null"
@@ -47,11 +52,15 @@
 
 <script>
 import config from "../config";
+import { FALLBACK_GEOMETRY, fetchVisionGeometry } from "./visionGeometry";
 
+// Positions are camera frame pixels, so the distance sent for the mm/px
+// calibration is the one the analysis measures, at any display size.
 export default {
   data() {
     return {
-      currentPosition: 500, // Start in the middle of the image
+      frame: { ...FALLBACK_GEOMETRY },
+      currentPosition: FALLBACK_GEOMETRY.width / 2, // Start in the middle of the image
       line1Position: null,
       line2Position: null,
       distanceField: null,
@@ -63,15 +72,14 @@ export default {
     url: () => config.url(),
   },
   methods: {
+    pct(position) {
+      return `${(position / this.frame.width) * 100}%`;
+    },
     moveLeft(amount) {
-      if (this.currentPosition > 0) {
-        this.currentPosition -= amount; // Move 10px to the left
-      }
+      this.currentPosition = Math.max(0, this.currentPosition - amount);
     },
     moveRight(amount) {
-      if (this.currentPosition < 1000) {
-        this.currentPosition += amount; // Move 10px to the right
-      }
+      this.currentPosition = Math.min(this.frame.width - 1, this.currentPosition + amount);
     },
     handleKeyPress(event) {
       // Move amount depends on whether Shift is held
@@ -92,7 +100,7 @@ export default {
     fixLinePosition() {
       if (this.line1Position === null) {
         this.line1Position = this.currentPosition;
-        this.currentPosition = 500; // Reset the current position
+        this.currentPosition = this.frame.width / 2; // Reset the current position
       } else if (this.line2Position === null) {
         this.line2Position = this.currentPosition;
       }
@@ -100,11 +108,17 @@ export default {
     reset() {
       this.line1Position = null;
       this.line2Position = null;
-      this.currentPosition = 500;
+      this.currentPosition = this.frame.width / 2;
     },
   },
-  mounted() {
+  async mounted() {
     this.$el.focus(); // Focus on the container to listen for key events
+    try {
+      this.frame = await fetchVisionGeometry();
+      if (this.line1Position === null) this.currentPosition = this.frame.width / 2;
+    } catch (error) {
+      console.error("Could not read the camera frame size:", error);
+    }
   },
   watch: {
     line2Position(newValue) {
@@ -119,15 +133,15 @@ export default {
 <style scoped>
 .image-container {
   position: relative;
-  width: 1000px;
-  height: 650px;
+  width: 100%;
+  max-width: 1000px;
   outline: none; /* Remove blue outline from focused div */
 }
 
 .background-image {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .vertical-line {

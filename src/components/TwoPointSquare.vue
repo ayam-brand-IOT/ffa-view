@@ -1,5 +1,9 @@
 <template>
-  <div class="image-container" @click="handleClick">
+  <div
+    class="image-container"
+    :style="{ aspectRatio: `${frame.width} / ${frame.height}` }"
+    @click="handleClick"
+  >
     <img
       :src="`${url_server}video_feed`"
       alt="Image"
@@ -10,9 +14,9 @@
       v-for="(point, index) in points"
       :key="index"
       class="point"
-      :style="{ left: point.x + 'px', top: point.y + 'px' }"
+      :style="{ left: pct(point.x, frame.width), top: pct(point.y, frame.height) }"
     ></div>
-    <!-- Shows point coordinates in the bottom-right corner -->
+    <!-- Shows point coordinates (camera frame pixels) in the bottom-right corner -->
     <div v-if="points.length > 0" class="coordinates">
       <div v-for="(point, index) in points" :key="'coords' + index">
         Point {{ index + 1 }}: X: {{ point.x }}, Y: {{ point.y }}
@@ -23,43 +27,55 @@
 
 <script>
 import config from "../config";
+import { FALLBACK_GEOMETRY, fetchVisionGeometry } from "./visionGeometry";
 
 export default {
   data() {
     return {
-      points: [], // Stores the coordinates of the two clicks
+      points: [], // The two clicks, in camera frame pixels
+      frame: { ...FALLBACK_GEOMETRY },
     };
   },
   computed: {
     squareStyle() {
-      const x1 = this.points[0].x;
-      const y1 = this.points[0].y;
-      const x2 = this.points[1].x;
-      const y2 = this.points[1].y;
-
-      const left = Math.min(x1, x2) + "px";
-      const top = Math.min(y1, y2) + "px";
-      const width = Math.abs(x2 - x1) + "px";
-      const height = Math.abs(y2 - y1) + "px";
-
-      return { left, top, width, height };
+      const [a, b] = this.points;
+      return {
+        left: this.pct(Math.min(a.x, b.x), this.frame.width),
+        top: this.pct(Math.min(a.y, b.y), this.frame.height),
+        width: this.pct(Math.abs(b.x - a.x), this.frame.width),
+        height: this.pct(Math.abs(b.y - a.y), this.frame.height),
+      };
     },
     url_server: () => config.url_server(),
     url_port: () => config.url_port(),
     url: () => config.url(),
   },
+  async mounted() {
+    try {
+      this.frame = await fetchVisionGeometry();
+    } catch (error) {
+      console.error("Could not read the camera frame size:", error);
+    }
+  },
   methods: {
+    pct(value, total) {
+      return `${(value / total) * 100}%`;
+    },
     handleClick(event) {
-      // Calculate coordinates relative to the image container
+      // The image is shown scaled; convert the click to camera frame pixels
       const rect = this.$el.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      const x = Math.round(((event.clientX - rect.left) * this.frame.width) / rect.width);
+      const y = Math.round(((event.clientY - rect.top) * this.frame.height) / rect.height);
+      const point = {
+        x: Math.min(Math.max(x, 0), this.frame.width),
+        y: Math.min(Math.max(y, 0), this.frame.height),
+      };
 
       // Add point or reset if two points already exist
       if (this.points.length < 2) {
-        this.points.push({ x, y });
+        this.points.push(point);
       } else {
-        this.points = [{ x, y }];
+        this.points = [point];
       }
     },
     reset() {
@@ -83,15 +99,15 @@ export default {
 <style scoped>
 .image-container {
   position: relative;
+  width: 100%;
   max-width: 1000px;
-  max-height: 650px;
   cursor: crosshair;
 }
 
 .background-image {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 .point {
   position: absolute;
