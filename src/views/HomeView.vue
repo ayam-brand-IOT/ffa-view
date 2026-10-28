@@ -311,8 +311,11 @@ export default {
       this.$refs.commandList.open();
     },
 
-    armReadyBeep() {
+    // This screen wants the ready beep and the laser line; both are per
+    // Socket.IO session, so they are armed again after a reconnect.
+    armAnalysisScreen() {
       this.socket_instance.emit("arm_ready_beep", {});
+      this.socket_instance.emit("arm_laser", {});
     },
 
     updateNet() {
@@ -627,9 +630,8 @@ export default {
     // taring out fish, water and ice and looked like the scale losing its
     // calibration. The operator tares explicitly, with the scale empty.
     socket_instance.emit("enter_to_weight_mode", {});
-    // Arming is per Socket.IO session: re-arm after a reconnect.
-    socket_instance.emit("arm_ready_beep", {});
-    socket_instance.on("connect", this.armReadyBeep);
+    this.armAnalysisScreen();
+    socket_instance.on("connect", this.armAnalysisScreen);
     this.updateNet(); // show the cached reading immediately
 
     socket_instance.on("weight_update", (data) => {
@@ -670,8 +672,9 @@ export default {
 
   beforeUnmount() {
     window.removeEventListener("keyup", this.keyboardCatch);
-    this.socket_instance.off("connect", this.armReadyBeep);
+    this.socket_instance.off("connect", this.armAnalysisScreen);
     this.socket_instance.emit("disarm_ready_beep", {});
+    this.socket_instance.emit("disarm_laser", {});
     this.socket_instance.off("weight_update");
     this.socket_instance.off("scale_status");
     this.socket_instance.off("scale_error");
