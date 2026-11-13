@@ -2,9 +2,28 @@
   <v-container fluid class="d-flex flex-column align-center justify-center" style="height: 100%">
     <v-icon size="80" color="success" class="mb-4">mdi-check-circle</v-icon>
     <h1 class="mb-2">Lot Analysis Complete</h1>
-    <p class="text-grey text-body-1 mb-8">
+    <p class="text-grey text-body-1 mb-4">
       Lot <strong>#{{ lotNo }}</strong> has been fully processed.
     </p>
+
+    <!-- The report and the Excel are kept on the server for later -->
+    <div class="d-flex align-center mb-8 text-body-2" style="min-height: 36px">
+      <template v-if="saving">
+        <v-progress-circular indeterminate size="18" width="2" class="mr-2" />
+        Saving report and Excel on the server…
+      </template>
+      <template v-else-if="savedExport">
+        <v-icon color="success" class="mr-2">mdi-cloud-check</v-icon>
+        Report and Excel saved on the server (#{{ savedExport.id }} · {{ savedExport.stamp }})
+      </template>
+      <template v-else-if="saveError">
+        <v-icon color="error" class="mr-2">mdi-cloud-alert</v-icon>
+        {{ saveError }}
+        <v-btn variant="text" color="primary" size="small" class="ml-2" @click="saveOnServer">
+          Retry
+        </v-btn>
+      </template>
+    </div>
 
     <v-card elevation="2" rounded="lg" min-width="360" class="mb-6">
       <v-list>
@@ -119,6 +138,9 @@ export default {
     pdfBlob: null,
     pdfUrl: null,
     pdfError: null,
+    saving: false,
+    savedExport: null,
+    saveError: null,
   }),
   computed: {
     ...mapGetters(["getAnalyzingLotNo"]),
@@ -129,6 +151,24 @@ export default {
     url: () => config.url(),
   },
   methods: {
+    async saveOnServer() {
+      if (!this.lotNo) return;
+      this.saving = true;
+      this.saveError = null;
+      try {
+        const response = await fetch(
+          `${this.url}:${this.url_port}/ffa-station/exports/${encodeURIComponent(this.lotNo)}`,
+          { method: "POST" }
+        );
+        if (!response.ok) throw new Error(`Save failed (${response.status})`);
+        this.savedExport = await response.json();
+      } catch (error) {
+        console.error(error);
+        this.saveError = "Could not save the report on the server.";
+      } finally {
+        this.saving = false;
+      }
+    },
     async downloadExcel() {
       this.downloading = true;
       try {
@@ -187,6 +227,9 @@ export default {
       this.$store.dispatch("setAnalyzingLot", null);
       this.$router.push("/");
     },
+  },
+  mounted() {
+    this.saveOnServer();
   },
   beforeUnmount() {
     if (this.pdfUrl) URL.revokeObjectURL(this.pdfUrl);
