@@ -173,7 +173,7 @@ export default {
       this.downloading = true;
       try {
         const response = await fetch(
-          `${this.url}:${this.url_port}/download-lot-samples/${this.lotNo}`
+          `${this.url}:${this.url_port}/download-lot-samples/${encodeURIComponent(this.lotNo)}`
         );
         if (!response.ok) throw new Error("Download failed");
         const blob = await response.blob();
@@ -194,7 +194,7 @@ export default {
       this.pdfError = null;
       try {
         const response = await fetch(
-          `${this.url}:${this.url_port}/download-lot-report/${this.lotNo}`
+          `${this.url}:${this.url_port}/download-lot-report/${encodeURIComponent(this.lotNo)}`
         );
         if (!response.ok) throw new Error("Download failed");
         this.pdfBlob = new Blob([await response.blob()], { type: "application/pdf" });

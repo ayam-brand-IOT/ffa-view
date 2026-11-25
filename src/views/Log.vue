@@ -181,7 +181,7 @@ export default {
     fetchData() {
       const { url, page, url_port } = this;
       const lot_no = this.getAnalyzingLotNo;
-      const get_request = `${url}:${url_port}/lot_samples/${lot_no}`;
+      const get_request = `${url}:${url_port}/lot_samples/${encodeURIComponent(lot_no)}`;
 
       console.warn();
       this.$refs.loadingModal.open();

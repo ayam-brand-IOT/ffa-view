@@ -45,7 +45,7 @@ export default {
       const { url, page, url_port } = this;
       const lot_no = this.getAnalyzingLotNo;
       console.warn(lot_no);
-      const get_request = `${url}:${url_port}/lot_images/${lot_no}`;
+      const get_request = `${url}:${url_port}/lot_images/${encodeURIComponent(lot_no)}`;
 
       console.warn();
       this.$refs.loadingModal.open();

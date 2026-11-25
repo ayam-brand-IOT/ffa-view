@@ -66,7 +66,7 @@ export default {
       const url = `${this.url}:${this.url_port}`;
 
       axios({
-        url: `${url}/download-lot-report/${item.lot_no}`,
+        url: `${url}/download-lot-report/${encodeURIComponent(item.lot_no)}`,
         method: "GET",
         responseType: "blob",
       }).then(
@@ -90,7 +90,7 @@ export default {
       this.$refs.loadingModal.open();
 
       const url = `${this.url}:${this.url_port}`;
-      const end_point = `/download-lot-samples/${item.lot_no}`;
+      const end_point = `/download-lot-samples/${encodeURIComponent(item.lot_no)}`;
 
       axios({
         url: `${url + end_point}`,
